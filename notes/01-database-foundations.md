@@ -119,6 +119,13 @@ What each does:
 
 ---
 
+## See Also
+
+- [00 - How To Study](00-how-to-study.md) — study workflow and glossary template
+- [02 - Tables, Rows, Columns](02-tables-rows-columns.md) — the building blocks inside a database
+
+---
+
 ## Checkpoint Questions
 
 1. What is the difference between DBMS and database?

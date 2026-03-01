@@ -123,6 +123,14 @@ Before adding a column, ask:
 
 ---
 
+## See Also
+
+- [02 - Tables, Rows, Columns](02-tables-rows-columns.md) — table structure basics
+- [04 - Keys and Relationships](04-keys-and-relationships.md) — primary/foreign key constraints
+- [05 - CRUD and Basic SELECT](05-crud-and-basic-select.md) — `AUTO_INCREMENT` for ID columns
+
+---
+
 ## Checkpoint Questions
 
 1. Why is `DECIMAL(10,2)` better than `FLOAT` for money?

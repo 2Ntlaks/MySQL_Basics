@@ -51,6 +51,51 @@ Use this when you want to keep rows even if related data is missing.
 
 ---
 
+## 3.5 RIGHT JOIN
+
+Returns all rows from the right table, and matches from the left table (if any).
+
+```sql
+SELECT
+  d.name AS department_name,
+  l.name AS lecturer_name
+FROM department d
+RIGHT JOIN lecturer l ON d.department_id = l.department_id;
+```
+
+> [!NOTE]
+> `RIGHT JOIN` is the mirror of `LEFT JOIN`. Most developers prefer rewriting as `LEFT JOIN` by swapping table order, but you should recognise both forms.
+
+---
+
+## 3.6 CROSS JOIN
+
+Returns every combination of rows from both tables (Cartesian product).
+
+```sql
+SELECT s.name, m.name
+FROM student s
+CROSS JOIN module m;
+```
+
+If `student` has 3 rows and `module` has 3 rows, you get 9 result rows.
+
+> [!WARNING]
+> `CROSS JOIN` can produce very large result sets. Use it only when you intentionally need all combinations.
+
+---
+
+## Join Comparison Summary
+
+| Join Type | Returns |
+|---|---|
+| `INNER JOIN` | Only matching rows from both tables |
+| `LEFT JOIN` | All left rows + matching right rows (NULL if no match) |
+| `RIGHT JOIN` | All right rows + matching left rows (NULL if no match) |
+| `CROSS JOIN` | Every combination of rows (no condition needed) |
+
+---
+
 ## 4. Subqueries
 
 A subquery is a query inside another query.
@@ -115,6 +160,16 @@ Some SQL systems support `INTERSECT` directly. In MySQL learning contexts, stude
 > [!TIP]
 > JOIN links tables by keys. Subquery nests logic. UNION stacks compatible results.
 
+> [!TIP]
+> When in doubt between LEFT and RIGHT JOIN, pick one direction and be consistent.
+
+---
+
+## See Also
+
+- [04 - Keys and Relationships](04-keys-and-relationships.md) — foreign keys that joins rely on
+- [06 - Filtering, Grouping, HAVING](06-filtering-grouping-having.md) — `WHERE`, `GROUP BY` used with joins
+
 ---
 
 ## Checkpoint Questions
@@ -122,4 +177,6 @@ Some SQL systems support `INTERSECT` directly. In MySQL learning contexts, stude
 1. Difference between `INNER JOIN` and `LEFT JOIN`?
 2. When would you use `EXISTS`?
 3. Why must `UNION` queries have matching column counts?
+4. What does `RIGHT JOIN` return that `INNER JOIN` does not?
+5. Why is `CROSS JOIN` dangerous on large tables?
 

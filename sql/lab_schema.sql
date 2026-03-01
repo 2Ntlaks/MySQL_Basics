@@ -7,12 +7,12 @@ USE dbs101_lab;
 
 -- 1:N example: department -> lecturer
 CREATE TABLE department (
-  department_id INT PRIMARY KEY,
+  department_id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE lecturer (
-  lecturer_id INT PRIMARY KEY,
+  lecturer_id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(50) NOT NULL,
   email VARCHAR(120) UNIQUE,
   department_id INT NOT NULL,
@@ -21,21 +21,22 @@ CREATE TABLE lecturer (
 
 -- N:N example: student <-> module through enrollment
 CREATE TABLE student (
-  student_id INT PRIMARY KEY,
+  student_id INT PRIMARY KEY AUTO_INCREMENT,
   student_number VARCHAR(20) UNIQUE NOT NULL,
   name VARCHAR(60) NOT NULL,
   email VARCHAR(120) UNIQUE,
+  date_of_birth DATE,
   age INT CHECK (age >= 16)
 );
 
 CREATE TABLE module (
-  module_id INT PRIMARY KEY,
+  module_id INT PRIMARY KEY AUTO_INCREMENT,
   code VARCHAR(20) UNIQUE NOT NULL,
   name VARCHAR(80) NOT NULL
 );
 
 CREATE TABLE enrollment (
-  enrollment_id INT PRIMARY KEY,
+  enrollment_id INT PRIMARY KEY AUTO_INCREMENT,
   student_id INT NOT NULL,
   module_id INT NOT NULL,
   enrolled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -45,12 +46,12 @@ CREATE TABLE enrollment (
 
 -- 1:1 example: person <-> passport
 CREATE TABLE person (
-  person_id INT PRIMARY KEY,
+  person_id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE passport (
-  passport_id INT PRIMARY KEY,
+  passport_id INT PRIMARY KEY AUTO_INCREMENT,
   person_id INT UNIQUE,
   passport_number VARCHAR(30) UNIQUE NOT NULL,
   FOREIGN KEY (person_id) REFERENCES person(person_id)

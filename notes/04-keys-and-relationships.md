@@ -171,6 +171,14 @@ erDiagram
 
 ---
 
+## See Also
+
+- [03 - Datatypes and Constraints](03-datatypes-and-constraints.md) — constraints that support keys
+- [07 - Joins, Subqueries, UNION](07-joins-subqueries-and-union.md) — querying across related tables
+- [09 - Normalization](09-normalization.md) — why we split tables
+
+---
+
 ## Checkpoint Questions
 
 1. Why must `person_id` be `UNIQUE` in a 1:1 passport table?

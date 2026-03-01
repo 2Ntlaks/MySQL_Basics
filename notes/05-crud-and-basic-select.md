@@ -88,6 +88,96 @@ WHERE student_id = 2;
 
 ---
 
+## 5. ORDER BY
+
+Use `ORDER BY` to sort results.
+
+```sql
+SELECT full_name, age FROM student
+ORDER BY age ASC;
+```
+
+- `ASC` = ascending (default, smallest first)
+- `DESC` = descending (largest first)
+
+Sort by multiple columns:
+
+```sql
+SELECT full_name, age FROM student
+ORDER BY age DESC, full_name ASC;
+```
+
+---
+
+## 6. LIMIT
+
+Use `LIMIT` to restrict how many rows are returned.
+
+```sql
+SELECT * FROM student
+ORDER BY age DESC
+LIMIT 3;
+```
+
+Get rows 4–6 (skip first 3):
+
+```sql
+SELECT * FROM student
+ORDER BY student_id
+LIMIT 3 OFFSET 3;
+```
+
+> [!TIP]
+> `LIMIT` is invaluable for pagination and testing queries on large tables.
+
+---
+
+## 7. Column Aliases
+
+Use `AS` to rename columns in output:
+
+```sql
+SELECT full_name AS student_name, age AS student_age
+FROM student;
+```
+
+Aliases make output more readable and are required when using aggregate functions.
+
+---
+
+## 8. AUTO_INCREMENT
+
+### Definition
+
+`AUTO_INCREMENT` tells MySQL to generate the next integer automatically when inserting a row.
+
+### Why use it?
+
+Manually tracking IDs is error-prone. Let MySQL handle it.
+
+```sql
+CREATE TABLE student (
+  student_id INT PRIMARY KEY AUTO_INCREMENT,
+  full_name VARCHAR(100) NOT NULL,
+  email VARCHAR(120) UNIQUE,
+  age INT
+);
+```
+
+Now you can insert without specifying the ID:
+
+```sql
+INSERT INTO student (full_name, email, age)
+VALUES ('Amahle Mokoena', 'amahle@uni.ac.za', 20);
+```
+
+MySQL will assign `student_id = 1` automatically, then `2`, `3`, etc.
+
+> [!NOTE]
+> `AUTO_INCREMENT` only works on integer columns that are a key (usually the primary key).
+
+---
+
 ## Query Reading Order (Conceptual)
 
 When you read a query, think:
@@ -95,6 +185,8 @@ When you read a query, think:
 1. Which table? (`FROM`)
 2. Which rows? (`WHERE`)
 3. Which columns? (`SELECT`)
+4. What order? (`ORDER BY`)
+5. How many? (`LIMIT`)
 
 ---
 
@@ -103,6 +195,8 @@ When you read a query, think:
 - Forgetting `WHERE` in `UPDATE`/`DELETE`
 - Inserting wrong datatype values
 - Copy-pasting `SELECT *` in every query when only a few columns are needed
+- Manually assigning IDs when `AUTO_INCREMENT` would be simpler
+- Forgetting `ORDER BY` when using `LIMIT` (results may be unpredictable)
 
 ---
 
@@ -111,6 +205,16 @@ When you read a query, think:
 > [!TIP]
 > First write a safe `SELECT ... WHERE ...` to confirm target rows before writing `UPDATE` or `DELETE`.
 
+> [!TIP]
+> Use `AUTO_INCREMENT` for primary keys so you never worry about duplicate IDs.
+
+---
+
+## See Also
+
+- [03 - Datatypes and Constraints](03-datatypes-and-constraints.md) — constraint rules
+- [06 - Filtering, Grouping, HAVING](06-filtering-grouping-having.md) — `WHERE`, `GROUP BY`
+
 ---
 
 ## Checkpoint Questions
@@ -118,4 +222,7 @@ When you read a query, think:
 1. What does CRUD stand for?
 2. Why is `WHERE` critical in `UPDATE` and `DELETE`?
 3. Why avoid `SELECT *` in production systems?
+4. What is the difference between `ORDER BY ASC` and `DESC`?
+5. What does `AUTO_INCREMENT` do and when should you use it?
+6. What happens if you use `LIMIT` without `ORDER BY`?
 

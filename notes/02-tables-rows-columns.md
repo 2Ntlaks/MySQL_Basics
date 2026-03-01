@@ -143,6 +143,13 @@ Recommended beginner rules:
 
 ---
 
+## See Also
+
+- [01 - Database Foundations](01-database-foundations.md) — what a database is
+- [03 - Datatypes and Constraints](03-datatypes-and-constraints.md) — choosing types for each column
+
+---
+
 ## Checkpoint Questions
 
 1. What is the difference between row and column?

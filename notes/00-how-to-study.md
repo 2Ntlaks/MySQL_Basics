@@ -51,9 +51,32 @@ SQL example:
 
 ## Progress Checklist
 
+### Foundations (Weeks 1–4)
+
 - [ ] I can explain what a database is.
 - [ ] I can explain the difference between table, row, and column.
 - [ ] I can choose an appropriate datatype for a field.
+- [ ] I can explain and use constraints (`NOT NULL`, `UNIQUE`, `CHECK`, `DEFAULT`).
 - [ ] I can define primary key and foreign key.
-- [ ] I can write basic `SELECT`, `INSERT`, `UPDATE`, and `DELETE`.
+- [ ] I can model 1:1, 1:N, and N:N relationships.
+
+### Core SQL (Weeks 5–7)
+
+- [ ] I can write `INSERT`, `UPDATE`, and `DELETE` with `WHERE`.
+- [ ] I can write `SELECT` with `ORDER BY` and `LIMIT`.
+- [ ] I can use `AUTO_INCREMENT` for primary keys.
+- [ ] I can filter with `WHERE`, `LIKE`, `IN`, `BETWEEN`, `IS NULL`.
+- [ ] I can group data with `GROUP BY` and filter groups with `HAVING`.
+- [ ] I can use aggregate functions: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`.
+- [ ] I can join tables using `INNER JOIN` and `LEFT JOIN`.
+- [ ] I can write subqueries with `IN` and `EXISTS`.
+- [ ] I can combine results with `UNION`.
+
+### Advanced Topics (Weeks 8–10)
+
+- [ ] I can use transactions: `START TRANSACTION`, `COMMIT`, `ROLLBACK`.
+- [ ] I can define ACID and give examples.
+- [ ] I can explain 1NF, 2NF, and 3NF.
+- [ ] I can use string, date, and numeric functions.
+- [ ] I can use `CASE` and `IF` for conditional logic.
 
