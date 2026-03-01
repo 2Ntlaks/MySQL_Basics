@@ -127,3 +127,361 @@ Explain: What would go wrong if these were separate statements without a transac
 | Transaction logic | 15 |
 | Reflection clarity | 10 |
 | **Total** | **100** |
+
+---
+
+## Solutions
+
+> [!WARNING]
+> Try to complete the exercise on your own before looking at the solutions below.
+
+<details>
+<summary><strong>Part A: Terminology Solutions</strong></summary>
+
+1. **Data integrity**
+   - Simple: Data integrity means your data is correct, complete, and consistent at all times.
+   - Technical: The assurance that data remains accurate and consistent throughout its lifecycle, enforced by constraints, keys, and transactions.
+
+2. **UNIQUE constraint**
+   - Simple: A UNIQUE constraint prevents duplicate values in a column.
+   - Technical: A constraint that enforces distinct values across all rows for a given column (or combination of columns); NULLs may be allowed depending on the DBMS.
+
+3. **One-to-One relationship**
+   - Simple: One record in table A matches exactly one record in table B.
+   - Technical: A relationship where each entity instance in A maps to at most one instance in B, implemented using a foreign key with a UNIQUE constraint.
+
+4. **Transaction**
+   - Simple: A transaction is a group of SQL operations that either all succeed or all fail together.
+   - Technical: A logical unit of work that satisfies the ACID properties (Atomicity, Consistency, Isolation, Durability), committed or rolled back as a whole.
+
+5. **ACID properties**
+   - Simple: ACID is a set of four rules that guarantee database transactions are processed reliably.
+   - Technical: Atomicity (all or nothing), Consistency (valid state to valid state), Isolation (concurrent transactions don't interfere), Durability (committed data survives crashes).
+
+</details>
+
+<details>
+<summary><strong>Part B: Design Answers</strong></summary>
+
+1. **citizen → identity_document** = One-to-One (each citizen gets one active ID document; enforced by UNIQUE on citizen FK).
+2. **birth_record has two FKs to citizen:** Because both the mother and father are citizens. Each FK references the same `citizen` table but represents a different role.
+3. **When a death record is created:** The identity document status should be updated to 'expired'. This is best done inside a transaction.
+4. **id_number UNIQUE:** Every South African citizen has a unique 13-digit ID number. No two people should share one.
+5. **VARCHAR(13) vs BIGINT:** Use VARCHAR(13). ID numbers can have leading zeros, and you never do arithmetic on them. VARCHAR preserves format exactly.
+6. **Prevent self-marriage:** Add a CHECK constraint: `CHECK (spouse1_citizen_id <> spouse2_citizen_id)`.
+
+</details>
+
+<details>
+<summary><strong>Part C: SQL Solutions</strong></summary>
+
+### C1. Create tables
+
+```sql
+CREATE DATABASE IF NOT EXISTS home_affairs_db;
+USE home_affairs_db;
+
+CREATE TABLE citizen (
+  citizen_id INT PRIMARY KEY AUTO_INCREMENT,
+  id_number VARCHAR(13) UNIQUE NOT NULL,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  date_of_birth DATE NOT NULL,
+  gender CHAR(1) NOT NULL CHECK (gender IN ('M', 'F')),
+  nationality VARCHAR(50) DEFAULT 'South African',
+  is_alive BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE address (
+  address_id INT PRIMARY KEY AUTO_INCREMENT,
+  citizen_id INT NOT NULL,
+  street VARCHAR(100) NOT NULL,
+  city VARCHAR(50) NOT NULL,
+  province VARCHAR(50) NOT NULL,
+  postal_code VARCHAR(10),
+  address_type VARCHAR(20) NOT NULL CHECK (address_type IN ('residential', 'postal')),
+  FOREIGN KEY (citizen_id) REFERENCES citizen(citizen_id)
+);
+
+CREATE TABLE identity_document (
+  document_id INT PRIMARY KEY AUTO_INCREMENT,
+  citizen_id INT UNIQUE NOT NULL,
+  document_number VARCHAR(30) UNIQUE NOT NULL,
+  issue_date DATE NOT NULL,
+  expiry_date DATE,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'lost')),
+  FOREIGN KEY (citizen_id) REFERENCES citizen(citizen_id)
+);
+
+CREATE TABLE birth_record (
+  birth_id INT PRIMARY KEY AUTO_INCREMENT,
+  child_citizen_id INT NOT NULL,
+  mother_citizen_id INT,
+  father_citizen_id INT,
+  date_of_birth DATE NOT NULL,
+  place_of_birth VARCHAR(100),
+  hospital_name VARCHAR(100),
+  FOREIGN KEY (child_citizen_id) REFERENCES citizen(citizen_id),
+  FOREIGN KEY (mother_citizen_id) REFERENCES citizen(citizen_id),
+  FOREIGN KEY (father_citizen_id) REFERENCES citizen(citizen_id)
+);
+
+CREATE TABLE marriage_record (
+  marriage_id INT PRIMARY KEY AUTO_INCREMENT,
+  spouse1_citizen_id INT NOT NULL,
+  spouse2_citizen_id INT NOT NULL,
+  marriage_date DATE NOT NULL,
+  marriage_officer VARCHAR(100),
+  venue VARCHAR(100),
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'divorced')),
+  CHECK (spouse1_citizen_id <> spouse2_citizen_id),
+  FOREIGN KEY (spouse1_citizen_id) REFERENCES citizen(citizen_id),
+  FOREIGN KEY (spouse2_citizen_id) REFERENCES citizen(citizen_id)
+);
+
+CREATE TABLE death_record (
+  death_id INT PRIMARY KEY AUTO_INCREMENT,
+  citizen_id INT NOT NULL,
+  date_of_death DATE NOT NULL,
+  cause_of_death VARCHAR(200),
+  place_of_death VARCHAR(100),
+  reported_by_citizen_id INT,
+  FOREIGN KEY (citizen_id) REFERENCES citizen(citizen_id),
+  FOREIGN KEY (reported_by_citizen_id) REFERENCES citizen(citizen_id)
+);
+```
+
+### C2. Insert sample data
+
+```sql
+INSERT INTO citizen (id_number, first_name, last_name, date_of_birth, gender, nationality, is_alive) VALUES
+  ('9001015800081', 'Lerato', 'Mokoena', '1990-01-01', 'F', 'South African', TRUE),
+  ('8805125800082', 'Thabo', 'Ndlovu', '1988-05-12', 'M', 'South African', TRUE),
+  ('7503085800083', 'Nomsa', 'Khumalo', '1975-03-08', 'F', 'South African', TRUE),
+  ('7008155800084', 'Sipho', 'Nkosi', '1970-08-15', 'M', 'South African', FALSE),
+  ('9512205800085', 'Zanele', 'Dlamini', '1995-12-20', 'F', 'South African', TRUE),
+  ('0003145800086', 'Kabelo', 'Sithole', '2000-03-14', 'M', 'South African', TRUE),
+  ('0510015800087', 'Naledi', 'Mahlangu', '2005-10-01', 'F', 'South African', TRUE),
+  ('5006205800088', 'Joseph', 'Moyo', '1950-06-20', 'M', 'South African', FALSE),
+  ('9208115800089', 'Palesa', 'Molefe', '1992-08-11', 'F', 'South African', TRUE),
+  ('8511225800090', 'Bongani', 'Van Wyk', '1985-11-22', 'M', 'South African', TRUE);
+
+INSERT INTO address (citizen_id, street, city, province, postal_code, address_type) VALUES
+  (1, '12 Mandela St', 'Johannesburg', 'Gauteng', '2001', 'residential'),
+  (2, '45 Sisulu Ave', 'Pretoria', 'Gauteng', '0001', 'residential'),
+  (3, '78 Biko Rd', 'Durban', 'KwaZulu-Natal', '4001', 'residential'),
+  (5, '23 Hani Cres', 'Cape Town', 'Western Cape', '8001', 'residential'),
+  (6, '10 Tambo Lane', 'Bloemfontein', 'Free State', '9301', 'residential'),
+  (1, 'PO Box 1234', 'Johannesburg', 'Gauteng', '2000', 'postal');
+
+INSERT INTO identity_document (citizen_id, document_number, issue_date, expiry_date, status) VALUES
+  (1, 'ID-900101-001', '2016-03-15', '2026-03-15', 'active'),
+  (2, 'ID-880512-002', '2014-07-20', '2024-07-20', 'expired'),
+  (3, 'ID-750308-003', '2020-01-10', '2030-01-10', 'active'),
+  (4, 'ID-700815-004', '2010-05-05', '2020-05-05', 'expired'),
+  (5, 'ID-951220-005', '2021-12-01', '2031-12-01', 'active'),
+  (6, 'ID-000314-006', '2026-01-20', '2036-01-20', 'active'),
+  (9, 'ID-920811-009', '2018-09-14', '2028-09-14', 'active'),
+  (10, 'ID-851122-010', '2019-04-30', '2029-04-30', 'active');
+
+INSERT INTO birth_record (child_citizen_id, mother_citizen_id, father_citizen_id, date_of_birth, place_of_birth, hospital_name) VALUES
+  (6, 1, 2, '2000-03-14', 'Johannesburg', 'Chris Hani Baragwanath'),
+  (7, 3, 4, '2005-10-01', 'Durban', 'Inkosi Albert Luthuli'),
+  (1, 3, 4, '1990-01-01', 'Durban', 'King Edward VIII'),
+  (5, NULL, NULL, '1995-12-20', 'Cape Town', 'Groote Schuur');
+
+INSERT INTO marriage_record (spouse1_citizen_id, spouse2_citizen_id, marriage_date, marriage_officer, venue, status) VALUES
+  (1, 2, '2018-12-15', 'Rev. Moyo', 'Johannesburg City Hall', 'active'),
+  (3, 4, '1998-06-22', 'Rev. Pillay', 'Durban Court', 'active'),
+  (9, 10, '2022-03-01', 'Rev. Naidoo', 'Cape Town Gardens', 'divorced');
+
+INSERT INTO death_record (citizen_id, date_of_death, cause_of_death, place_of_death, reported_by_citizen_id) VALUES
+  (4, '2023-11-10', 'Natural causes', 'Durban', 3),
+  (8, '2024-06-15', 'Natural causes', 'Johannesburg', 1);
+```
+
+### C3. Queries
+
+**1. All living citizens sorted by last name:**
+
+```sql
+SELECT * FROM citizen WHERE is_alive = TRUE ORDER BY last_name ASC;
+```
+
+**2. Citizens born in a specific province:**
+
+```sql
+SELECT c.first_name, c.last_name, a.province
+FROM citizen c
+INNER JOIN address a ON c.citizen_id = a.citizen_id
+WHERE a.province = 'Gauteng' AND a.address_type = 'residential';
+```
+
+**3. Each citizen with their ID document details:**
+
+```sql
+SELECT
+  c.first_name,
+  c.last_name,
+  c.id_number,
+  id.document_number,
+  id.issue_date,
+  id.expiry_date,
+  id.status
+FROM citizen c
+INNER JOIN identity_document id ON c.citizen_id = id.citizen_id;
+```
+
+**4. Citizens without an ID document:**
+
+```sql
+SELECT c.first_name, c.last_name, c.id_number
+FROM citizen c
+LEFT JOIN identity_document id ON c.citizen_id = id.citizen_id
+WHERE id.document_id IS NULL;
+```
+
+**5. Count citizens per province:**
+
+```sql
+SELECT
+  a.province,
+  COUNT(DISTINCT a.citizen_id) AS citizen_count
+FROM address a
+WHERE a.address_type = 'residential'
+GROUP BY a.province
+ORDER BY citizen_count DESC;
+```
+
+**6. Active marriages with both spouse names:**
+
+```sql
+SELECT
+  c1.first_name AS spouse1_first,
+  c1.last_name AS spouse1_last,
+  c2.first_name AS spouse2_first,
+  c2.last_name AS spouse2_last,
+  m.marriage_date,
+  m.venue
+FROM marriage_record m
+INNER JOIN citizen c1 ON m.spouse1_citizen_id = c1.citizen_id
+INNER JOIN citizen c2 ON m.spouse2_citizen_id = c2.citizen_id
+WHERE m.status = 'active';
+```
+
+**7. Citizens born between 1990 and 2000:**
+
+```sql
+SELECT * FROM citizen
+WHERE date_of_birth BETWEEN '1990-01-01' AND '2000-12-31';
+```
+
+**8. Citizens with expired ID documents:**
+
+```sql
+SELECT c.first_name, c.last_name, id.document_number, id.expiry_date
+FROM citizen c
+INNER JOIN identity_document id ON c.citizen_id = id.citizen_id
+WHERE id.expiry_date < CURDATE();
+```
+
+**9. Birth records with child, mother, and father names:**
+
+```sql
+SELECT
+  child.first_name AS child_name,
+  mother.first_name AS mother_name,
+  father.first_name AS father_name,
+  br.date_of_birth,
+  br.hospital_name
+FROM birth_record br
+INNER JOIN citizen child ON br.child_citizen_id = child.citizen_id
+LEFT JOIN citizen mother ON br.mother_citizen_id = mother.citizen_id
+LEFT JOIN citizen father ON br.father_citizen_id = father.citizen_id;
+```
+
+**10. Province with most registered citizens:**
+
+```sql
+SELECT a.province, COUNT(DISTINCT a.citizen_id) AS citizen_count
+FROM address a
+WHERE a.address_type = 'residential'
+GROUP BY a.province
+ORDER BY citizen_count DESC
+LIMIT 1;
+```
+
+**11. Count marriages per year:**
+
+```sql
+SELECT YEAR(marriage_date) AS marriage_year, COUNT(*) AS total_marriages
+FROM marriage_record
+GROUP BY YEAR(marriage_date)
+ORDER BY marriage_year;
+```
+
+**12. Citizens whose last name starts with 'N':**
+
+```sql
+SELECT * FROM citizen WHERE last_name LIKE 'N%';
+```
+
+### C4. Self-Join Challenge
+
+```sql
+SELECT
+  child.first_name AS child_name,
+  child.last_name AS child_surname,
+  mother.first_name AS mother_name,
+  father.first_name AS father_name
+FROM birth_record br
+INNER JOIN citizen child ON br.child_citizen_id = child.citizen_id
+LEFT JOIN citizen mother ON br.mother_citizen_id = mother.citizen_id
+LEFT JOIN citizen father ON br.father_citizen_id = father.citizen_id;
+```
+
+> **How aliases help:** The `citizen` table is joined three times — once as `child`, once as `mother`, once as `father`. Without aliases, MySQL wouldn't know which instance of `citizen` you're referring to in each ON clause. Aliases give each join a distinct name.
+
+</details>
+
+<details>
+<summary><strong>Part D: Transaction Solution</strong></summary>
+
+```sql
+START TRANSACTION;
+
+-- Check if citizen is already dead
+SELECT is_alive INTO @alive FROM citizen WHERE citizen_id = 4;
+
+-- Only proceed if alive (in a stored procedure, you'd use IF)
+-- If @alive = FALSE, ROLLBACK
+
+-- Step 1: Insert death record
+INSERT INTO death_record (citizen_id, date_of_death, cause_of_death, place_of_death, reported_by_citizen_id)
+VALUES (4, '2023-11-10', 'Natural causes', 'Durban', 3);
+
+-- Step 2: Mark citizen as deceased
+UPDATE citizen SET is_alive = FALSE WHERE citizen_id = 4;
+
+-- Step 3: Expire their identity document
+UPDATE identity_document SET status = 'expired' WHERE citizen_id = 4;
+
+COMMIT;
+```
+
+**What would go wrong without a transaction?** If the death record is inserted but the system crashes before updating `is_alive` or the ID document status, the data becomes inconsistent — the citizen would appear both dead (death_record exists) and alive (is_alive = TRUE) simultaneously. Government records with such inconsistency could cause legal problems.
+
+</details>
+
+<details>
+<summary><strong>Part E: Reflection Guidance</strong></summary>
+
+1. **VARCHAR(13) not BIGINT:** SA ID numbers can start with 0 (e.g., "0003145800086"). BIGINT would strip the leading zero. Also, you never do math (+, -, AVG) on ID numbers — they are identifiers, not quantities.
+
+2. **Consequences of poor data integrity:** Incorrect birth certificates, duplicate identity documents, false marriage records, wrong death declarations. These have direct legal and financial implications for citizens.
+
+3. **Address history:** Add an `effective_date` and `end_date` column to the address table. Current address has `end_date IS NULL`. Previous addresses have both dates filled in.
+
+4. **Why more sensitive:** This database contains personally identifiable information (PII) protected by law (POPIA in South Africa). Unauthorized access, inaccurate records, or data breaches can cause identity theft, fraud, or denial of government services.
+
+</details>
