@@ -67,7 +67,7 @@ Design the following tables with columns, datatypes, and constraints:
 Write queries for:
 
 1. Find all living citizens sorted by last name.
-2. List all citizens born in a specific province.
+2. List all citizens who live in a specific province (by residential address).
 3. Show each citizen with their identity document details (use `JOIN`).
 4. Find all citizens who do NOT have an identity document (use `LEFT JOIN`).
 5. Count citizens per province.
@@ -323,7 +323,7 @@ SELECT * FROM citizen WHERE is_alive = TRUE ORDER BY last_name ASC;
 
 > 8 of 10 citizens are alive. Sipho Nkosi and Joseph Moyo are excluded.
 
-**2. Citizens born in a specific province:**
+**2. Citizens who live in a specific province (by residential address):**
 
 ```sql
 SELECT c.first_name, c.last_name, a.province
@@ -614,9 +614,17 @@ END //
 
 DELIMITER ;
 
--- Usage:
+-- Test the success path (citizen 5 = Zanele, alive):
+CALL register_death(5, '2026-02-28', 'Natural causes', 'Cape Town', 1);
+-- Expected: 'SUCCESS: Death registered'
+
+-- Test the error path (citizen 4 = Sipho, already deceased in seed data):
 CALL register_death(4, '2023-11-10', 'Natural causes', 'Durban', 3);
+-- Expected: 'ERROR: Citizen is already recorded as deceased'
 ```
+
+> [!TIP]
+> The second call demonstrates the ROLLBACK path — Sipho (citizen_id 4) was already marked `is_alive = FALSE` in the seed data, so the procedure correctly rejects the duplicate death registration.
 
 **What would go wrong without a transaction?** If the death record is inserted but the system crashes before updating `is_alive` or the ID document status, the data becomes inconsistent — the citizen would appear both dead (death_record exists) and alive (is_alive = TRUE) simultaneously. Government records with such inconsistency could cause legal problems.
 

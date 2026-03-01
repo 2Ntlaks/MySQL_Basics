@@ -28,18 +28,18 @@ After this lesson, you should be able to:
 ### Practical examples
 
 ```sql
--- Full name from first and last name columns
-SELECT CONCAT(first_name, ' ', last_name) AS full_name
+-- Combine a prefix with the lecturer name
+SELECT CONCAT('Prof. ', name) AS formal_name
 FROM lecturer;
 ```
 
-**Expected output (using lab data where lecturer has a `name` column):**
+**Expected output (using lab data):**
 
-| full_name |
+| formal_name |
 |---|
-| Dr. Khumalo |
-| Ms. Naidoo |
-| Dr. Ndlovu |
+| Prof. Dr. Khumalo |
+| Prof. Ms. Naidoo |
+| Prof. Dr. Ndlovu |
 
 ```sql
 -- Standardize email to lowercase

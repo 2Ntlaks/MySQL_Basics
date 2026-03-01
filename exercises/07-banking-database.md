@@ -416,10 +416,10 @@ ORDER BY transaction_date DESC;
 ```sql
 SELECT
   a.account_number,
-  SUM(CASE WHEN t.transaction_type = 'deposit' THEN t.amount ELSE 0 END) AS total_deposits,
-  SUM(CASE WHEN t.transaction_type = 'withdrawal' THEN t.amount ELSE 0 END) AS total_withdrawals
-FROM bank_transaction t
-INNER JOIN account a ON t.account_id = a.account_id
+  COALESCE(SUM(CASE WHEN t.transaction_type = 'deposit' THEN t.amount END), 0) AS total_deposits,
+  COALESCE(SUM(CASE WHEN t.transaction_type = 'withdrawal' THEN t.amount END), 0) AS total_withdrawals
+FROM account a
+LEFT JOIN bank_transaction t ON a.account_id = t.account_id
 GROUP BY a.account_id, a.account_number;
 ```
 
@@ -431,12 +431,14 @@ GROUP BY a.account_id, a.account_number;
 | ACC-001-CHQ | 2000.00 | 0.00 |
 | ACC-002-SAV | 3000.00 | 500.00 |
 | ACC-003-SAV | 10000.00 | 3000.00 |
+| ACC-003-FD | 0.00 | 0.00 |
 | ACC-004-SAV | 1500.00 | 800.00 |
+| ACC-004-CHQ | 0.00 | 0.00 |
 | ACC-005-SAV | 500.00 | 0.00 |
 | ACC-006-SAV | 8000.00 | 2500.00 |
 | ACC-006-CHQ | 1200.00 | 0.00 |
 
-> Transfer-type transactions don't appear in either column — only deposits and withdrawals.
+> `LEFT JOIN` ensures all 10 accounts appear, even ACC-003-FD and ACC-004-CHQ which have no transactions. `COALESCE` turns NULL into 0. Transfer-type transactions don't appear in either column.
 
 **6. Customers with accounts at more than one branch:**
 
@@ -677,7 +679,7 @@ CALL transfer_funds(1, 3, 1000.00);
 
 1. **Why atomic:** The debit and credit are two halves of one operation. If only the debit succeeds, R1000 disappears — the sender loses money that the receiver never gets.
 
-2. **Crash after step 2 but before step 3:** Account A has R1000 less, but Account B hasn't received it. The total money in the bank has decreased by R1000. This is a catastrophic integrity failure.
+2. **Crash after step 1 but before step 2:** Account A has been debited by R1000, but Account B hasn't been credited yet. The total money in the bank has decreased by R1000. This is a catastrophic integrity failure.
 
 3. **How COMMIT protects:** Until COMMIT is called, none of the changes are permanently saved. If the system crashes before COMMIT, the ROLLBACK happens automatically on recovery, restoring both accounts to their original balances.
 
