@@ -242,17 +242,46 @@ INSERT INTO loan (member_id, book_id, loan_date, due_date, return_date) VALUES
 SELECT * FROM book ORDER BY title ASC;
 ```
 
+**Expected output:**
+
+| book_id | title | isbn | genre | published_year | copies | author_id |
+|---:|---|---|---|---:|---:|---:|
+| 3 | Born a Crime | 978-0399588174 | Memoir | 2016 | 2 | 3 |
+| 2 | Cry, the Beloved Country | 978-0743262170 | Fiction | 1948 | 4 | 2 |
+| 5 | No Longer at Ease | 978-0385474559 | Fiction | 1960 | 2 | 1 |
+| 4 | The Beautiful Ones | 978-0063076075 | Fiction | 2020 | 3 | 1 |
+| 1 | Things Fall Apart | 978-0385474542 | Fiction | 1958 | 3 | 1 |
+| 6 | Too Late the Phalarope | 978-0684818948 | Fiction | 1953 | 1 | 2 |
+
 **2. Books published after 2015:**
 
 ```sql
 SELECT * FROM book WHERE published_year > 2015;
 ```
 
+**Expected output:**
+
+| book_id | title | isbn | genre | published_year | copies | author_id |
+|---:|---|---|---|---:|---:|---:|
+| 3 | Born a Crime | 978-0399588174 | Memoir | 2016 | 2 | 3 |
+| 4 | The Beautiful Ones | 978-0063076075 | Fiction | 2020 | 3 | 1 |
+
 **3. Currently active loans:**
 
 ```sql
 SELECT * FROM loan WHERE return_date IS NULL;
 ```
+
+**Expected output:**
+
+| loan_id | member_id | book_id | loan_date | due_date | return_date |
+|---:|---:|---:|---|---|---|
+| 2 | 1 | 3 | 2026-02-01 | 2026-02-15 | NULL |
+| 5 | 2 | 2 | 2026-02-05 | 2026-02-19 | NULL |
+| 6 | 3 | 4 | 2026-02-10 | 2026-02-24 | NULL |
+| 7 | 3 | 6 | 2026-02-12 | 2026-02-26 | NULL |
+
+> Books with `NULL` in return_date have not been returned yet.
 
 **4. Loan details with member name and book title:**
 
@@ -269,6 +298,21 @@ INNER JOIN member m ON l.member_id = m.member_id
 INNER JOIN book b ON l.book_id = b.book_id;
 ```
 
+**Expected output:**
+
+| loan_id | member_name | book_title | loan_date | due_date | return_date |
+|---:|---|---|---|---|---|
+| 1 | Amahle Mokoena | Things Fall Apart | 2026-01-10 | 2026-01-24 | 2026-01-20 |
+| 2 | Amahle Mokoena | Born a Crime | 2026-02-01 | 2026-02-15 | NULL |
+| 3 | Amahle Mokoena | No Longer at Ease | 2026-02-10 | 2026-02-24 | 2026-02-22 |
+| 4 | Lebo Ncube | Things Fall Apart | 2026-01-15 | 2026-01-29 | 2026-01-28 |
+| 5 | Lebo Ncube | Cry, the Beloved Country | 2026-02-05 | 2026-02-19 | NULL |
+| 6 | Sipho Dlamini | The Beautiful Ones | 2026-02-10 | 2026-02-24 | NULL |
+| 7 | Sipho Dlamini | Too Late the Phalarope | 2026-02-12 | 2026-02-26 | NULL |
+| 8 | Thandi Nkosi | Born a Crime | 2026-01-20 | 2026-02-03 | 2026-02-01 |
+
+> The JOIN replaced `member_id` and `book_id` with human-readable names.
+
 **5. Count books borrowed per member:**
 
 ```sql
@@ -279,6 +323,15 @@ FROM loan l
 INNER JOIN member m ON l.member_id = m.member_id
 GROUP BY m.member_id, m.full_name;
 ```
+
+**Expected output:**
+
+| full_name | books_borrowed |
+|---|---:|
+| Amahle Mokoena | 3 |
+| Lebo Ncube | 2 |
+| Sipho Dlamini | 2 |
+| Thandi Nkosi | 1 |
 
 **6. Members who borrowed more than 2 books:**
 
@@ -292,6 +345,14 @@ GROUP BY m.member_id, m.full_name
 HAVING COUNT(*) > 2;
 ```
 
+**Expected output:**
+
+| full_name | books_borrowed |
+|---|---:|
+| Amahle Mokoena | 3 |
+
+> Only Amahle has more than 2 loans.
+
 **7. Members who never borrowed a book:**
 
 ```sql
@@ -300,6 +361,14 @@ FROM member m
 LEFT JOIN loan l ON m.member_id = l.member_id
 WHERE l.loan_id IS NULL;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> All 4 members have at least one loan. If a 5th member existed with no loans, they'd appear here.
 
 **8. Most popular book:**
 
@@ -314,11 +383,29 @@ ORDER BY times_borrowed DESC
 LIMIT 1;
 ```
 
+**Expected output:**
+
+| title | times_borrowed |
+|---|---:|
+| Born a Crime | 2 |
+
+> "Born a Crime" and "Things Fall Apart" both have 2 loans, but LIMIT 1 returns whichever MySQL finds first.
+
 **9. Books with "the" in the title:**
 
 ```sql
 SELECT * FROM book WHERE title LIKE '%the%';
 ```
+
+**Expected output:**
+
+| book_id | title | isbn | genre | published_year | copies | author_id |
+|---:|---|---|---|---:|---:|---:|
+| 2 | Cry, the Beloved Country | 978-0743262170 | Fiction | 1948 | 4 | 2 |
+| 4 | The Beautiful Ones | 978-0063076075 | Fiction | 2020 | 3 | 1 |
+| 6 | Too Late the Phalarope | 978-0684818948 | Fiction | 1953 | 1 | 2 |
+
+> LIKE is case-insensitive in MySQL, so "The" and "the" both match.
 
 **10. Average loans per member:**
 
@@ -330,6 +417,14 @@ FROM (
   GROUP BY member_id
 ) AS member_loans;
 ```
+
+**Expected output:**
+
+| avg_loans_per_member |
+|---:|
+| 2.0000 |
+
+> (3 + 2 + 2 + 1) / 4 = 2.0 average loans per member.
 
 </details>
 

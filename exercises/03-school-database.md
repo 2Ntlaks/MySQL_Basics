@@ -288,6 +288,13 @@ WHERE grade_level = 10
 ORDER BY last_name ASC;
 ```
 
+**Expected output:**
+
+| student_id | student_number | first_name | last_name | date_of_birth | grade_level | gender |
+|---:|---|---|---|---|---:|---:|
+| 1 | S2026001 | Amahle | Mokoena | 2010-03-14 | 10 | F |
+| 2 | S2026002 | Lebo | Ncube | 2010-11-02 | 10 | M |
+
 **2. Subjects taught by a specific teacher (e.g., teacher_id = 1):**
 
 ```sql
@@ -296,6 +303,15 @@ FROM class c
 INNER JOIN subject s ON c.subject_id = s.subject_id
 WHERE c.teacher_id = 1;
 ```
+
+**Expected output:**
+
+| subject_code | subject_name |
+|---|---|
+| MATH10 | Mathematics |
+| MATH12 | Mathematics |
+
+> Mr. Moyo teaches 3 classes but only 2 distinct subjects.
 
 **3. Student name with class and subject name:**
 
@@ -312,6 +328,23 @@ INNER JOIN class c ON sc.class_id = c.class_id
 INNER JOIN subject sub ON c.subject_id = sub.subject_id;
 ```
 
+**Expected output:**
+
+| first_name | last_name | subject_name | year | term |
+|---|---|---|---:|---:|
+| Amahle | Mokoena | Mathematics | 2026 | 1 |
+| Amahle | Mokoena | English | 2026 | 1 |
+| Lebo | Ncube | Mathematics | 2026 | 1 |
+| Lebo | Ncube | English | 2026 | 1 |
+| Sipho | Dlamini | Physical Science | 2026 | 1 |
+| Thandi | Nkosi | Mathematics | 2026 | 1 |
+| Kagiso | Molefe | Mathematics | 2026 | 1 |
+| Zanele | Mahlangu | Physical Science | 2026 | 1 |
+| Sipho | Dlamini | Mathematics | 2026 | 2 |
+| Zanele | Mahlangu | Mathematics | 2026 | 2 |
+
+> 10 rows — one for each student-class enrollment. Some students appear twice.
+
 **4. Average mark per subject:**
 
 ```sql
@@ -323,6 +356,17 @@ INNER JOIN class c ON g.class_id = c.class_id
 INNER JOIN subject sub ON c.subject_id = sub.subject_id
 GROUP BY sub.subject_id, sub.subject_name;
 ```
+
+**Expected output:**
+
+| subject_name | avg_mark |
+|---|---:|
+| Mathematics | 64.5 |
+| English | 68.3 |
+| Physical Science | 69.3 |
+| Mathematics | 88.5 |
+
+> "Mathematics" appears twice because Grade 10 and Grade 12 Maths are different subjects (different subject_ids).
 
 **5. Top 3 students by overall average mark:**
 
@@ -338,6 +382,16 @@ ORDER BY overall_avg DESC
 LIMIT 3;
 ```
 
+**Expected output:**
+
+| first_name | last_name | overall_avg |
+|---|---|---:|
+| Sipho | Dlamini | 90.0 |
+| Kagiso | Molefe | 88.5 |
+| Amahle | Mokoena | 75.5 |
+
+> Sipho leads with 90.0 = (88 + 92) / 2.
+
 **6. Student count per grade level:**
 
 ```sql
@@ -346,6 +400,15 @@ FROM student
 GROUP BY grade_level
 ORDER BY grade_level;
 ```
+
+**Expected output:**
+
+| grade_level | student_count |
+|---:|---:|
+| 9 | 1 |
+| 10 | 2 |
+| 11 | 2 |
+| 12 | 1 |
 
 **7. At-risk students (scored below 40):**
 
@@ -362,6 +425,14 @@ INNER JOIN subject sub ON c.subject_id = sub.subject_id
 WHERE g.mark < 40;
 ```
 
+**Expected output:**
+
+| first_name | last_name | mark | subject_name |
+|---|---|---:|---|
+| Thandi | Nkosi | 35 | Mathematics |
+
+> Only Thandi scored below 40. She needs extra support in Mathematics.
+
 **8. Teachers with more than 2 classes:**
 
 ```sql
@@ -374,6 +445,14 @@ INNER JOIN teacher t ON c.teacher_id = t.teacher_id
 GROUP BY t.teacher_id, t.first_name, t.last_name
 HAVING COUNT(*) > 2;
 ```
+
+**Expected output:**
+
+| first_name | last_name | class_count |
+|---|---|---:|
+| Mr. | Moyo | 3 |
+
+> Mr. Moyo teaches MATH10 Term 1, MATH12 Term 1, and MATH10 Term 2.
 
 **9. Subjects where class average is above 70:**
 
@@ -388,6 +467,14 @@ GROUP BY sub.subject_id, sub.subject_name
 HAVING AVG(g.mark) > 70;
 ```
 
+**Expected output:**
+
+| subject_name | class_avg |
+|---|---:|
+| Mathematics | 88.5 |
+
+> Only Grade 12 Mathematics (Kagiso's marks: 90 and 87) averages above 70.
+
 **10. Students NOT enrolled in any class:**
 
 ```sql
@@ -396,6 +483,14 @@ FROM student st
 LEFT JOIN student_class sc ON st.student_id = sc.student_id
 WHERE sc.student_class_id IS NULL;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> All 6 students are enrolled in at least one class.
 
 ### C4. Update and Delete
 

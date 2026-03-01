@@ -308,6 +308,21 @@ INSERT INTO death_record (citizen_id, date_of_death, cause_of_death, place_of_de
 SELECT * FROM citizen WHERE is_alive = TRUE ORDER BY last_name ASC;
 ```
 
+**Expected output:**
+
+| citizen_id | id_number | first_name | last_name | date_of_birth | gender | nationality | is_alive |
+|---:|---|---|---|---|---:|---|---:|
+| 5 | 9512205800085 | Zanele | Dlamini | 1995-12-20 | F | South African | 1 |
+| 3 | 7503085800083 | Nomsa | Khumalo | 1975-03-08 | F | South African | 1 |
+| 7 | 0510015800087 | Naledi | Mahlangu | 2005-10-01 | F | South African | 1 |
+| 1 | 9001015800081 | Lerato | Mokoena | 1990-01-01 | F | South African | 1 |
+| 9 | 9208115800089 | Palesa | Molefe | 1992-08-11 | F | South African | 1 |
+| 2 | 8805125800082 | Thabo | Ndlovu | 1988-05-12 | M | South African | 1 |
+| 6 | 0003145800086 | Kabelo | Sithole | 2000-03-14 | M | South African | 1 |
+| 10 | 8511225800090 | Bongani | Van Wyk | 1985-11-22 | M | South African | 1 |
+
+> 8 of 10 citizens are alive. Sipho Nkosi and Joseph Moyo are excluded.
+
 **2. Citizens born in a specific province:**
 
 ```sql
@@ -316,6 +331,15 @@ FROM citizen c
 INNER JOIN address a ON c.citizen_id = a.citizen_id
 WHERE a.province = 'Gauteng' AND a.address_type = 'residential';
 ```
+
+**Expected output:**
+
+| first_name | last_name | province |
+|---|---|---|
+| Lerato | Mokoena | Gauteng |
+| Thabo | Ndlovu | Gauteng |
+
+> Only residential addresses are counted. Lerato's postal address is also in Gauteng but filtered out.
 
 **3. Each citizen with their ID document details:**
 
@@ -332,6 +356,21 @@ FROM citizen c
 INNER JOIN identity_document id ON c.citizen_id = id.citizen_id;
 ```
 
+**Expected output:**
+
+| first_name | last_name | id_number | document_number | issue_date | expiry_date | status |
+|---|---|---|---|---|---|---|
+| Lerato | Mokoena | 9001015800081 | ID-900101-001 | 2016-03-15 | 2026-03-15 | active |
+| Thabo | Ndlovu | 8805125800082 | ID-880512-002 | 2014-07-20 | 2024-07-20 | expired |
+| Nomsa | Khumalo | 7503085800083 | ID-750308-003 | 2020-01-10 | 2030-01-10 | active |
+| Sipho | Nkosi | 7008155800084 | ID-700815-004 | 2010-05-05 | 2020-05-05 | expired |
+| Zanele | Dlamini | 9512205800085 | ID-951220-005 | 2021-12-01 | 2031-12-01 | active |
+| Kabelo | Sithole | 0003145800086 | ID-000314-006 | 2026-01-20 | 2036-01-20 | active |
+| Palesa | Molefe | 9208115800089 | ID-920811-009 | 2018-09-14 | 2028-09-14 | active |
+| Bongani | Van Wyk | 8511225800090 | ID-851122-010 | 2019-04-30 | 2029-04-30 | active |
+
+> 8 rows — citizens 7 (Naledi) and 8 (Joseph) don't have ID documents.
+
 **4. Citizens without an ID document:**
 
 ```sql
@@ -340,6 +379,15 @@ FROM citizen c
 LEFT JOIN identity_document id ON c.citizen_id = id.citizen_id
 WHERE id.document_id IS NULL;
 ```
+
+**Expected output:**
+
+| first_name | last_name | id_number |
+|---|---|---|
+| Naledi | Mahlangu | 0510015800087 |
+| Joseph | Moyo | 5006205800088 |
+
+> These two citizens need to apply for ID documents.
 
 **5. Count citizens per province:**
 
@@ -352,6 +400,17 @@ WHERE a.address_type = 'residential'
 GROUP BY a.province
 ORDER BY citizen_count DESC;
 ```
+
+**Expected output:**
+
+| province | citizen_count |
+|---|---:|
+| Gauteng | 2 |
+| KwaZulu-Natal | 1 |
+| Western Cape | 1 |
+| Free State | 1 |
+
+> Only 5 citizens have residential addresses. The other 5 citizens don't appear.
 
 **6. Active marriages with both spouse names:**
 
@@ -369,12 +428,30 @@ INNER JOIN citizen c2 ON m.spouse2_citizen_id = c2.citizen_id
 WHERE m.status = 'active';
 ```
 
+**Expected output:**
+
+| spouse1_first | spouse1_last | spouse2_first | spouse2_last | marriage_date | venue |
+|---|---|---|---|---|---|
+| Lerato | Mokoena | Thabo | Ndlovu | 2018-12-15 | Johannesburg City Hall |
+| Nomsa | Khumalo | Sipho | Nkosi | 1998-06-22 | Durban Court |
+
+> The Palesa-Bongani marriage is excluded because its status is 'divorced'.
+
 **7. Citizens born between 1990 and 2000:**
 
 ```sql
 SELECT * FROM citizen
 WHERE date_of_birth BETWEEN '1990-01-01' AND '2000-12-31';
 ```
+
+**Expected output:**
+
+| citizen_id | id_number | first_name | last_name | date_of_birth | gender | nationality | is_alive |
+|---:|---|---|---|---|---:|---|---:|
+| 1 | 9001015800081 | Lerato | Mokoena | 1990-01-01 | F | South African | 1 |
+| 5 | 9512205800085 | Zanele | Dlamini | 1995-12-20 | F | South African | 1 |
+| 6 | 0003145800086 | Kabelo | Sithole | 2000-03-14 | M | South African | 1 |
+| 9 | 9208115800089 | Palesa | Molefe | 1992-08-11 | F | South African | 1 |
 
 **8. Citizens with expired ID documents:**
 
@@ -384,6 +461,16 @@ FROM citizen c
 INNER JOIN identity_document id ON c.citizen_id = id.citizen_id
 WHERE id.expiry_date < CURDATE();
 ```
+
+**Expected output (as of mid-2026):**
+
+| first_name | last_name | document_number | expiry_date |
+|---|---|---|---|
+| Thabo | Ndlovu | ID-880512-002 | 2024-07-20 |
+| Sipho | Nkosi | ID-700815-004 | 2020-05-05 |
+| Lerato | Mokoena | ID-900101-001 | 2026-03-15 |
+
+> Results depend on when you run the query. Lerato's document expires on 2026-03-15.
 
 **9. Birth records with child, mother, and father names:**
 
@@ -400,6 +487,17 @@ LEFT JOIN citizen mother ON br.mother_citizen_id = mother.citizen_id
 LEFT JOIN citizen father ON br.father_citizen_id = father.citizen_id;
 ```
 
+**Expected output:**
+
+| child_name | mother_name | father_name | date_of_birth | hospital_name |
+|---|---|---|---|---|
+| Kabelo | Lerato | Thabo | 2000-03-14 | Chris Hani Baragwanath |
+| Naledi | Nomsa | Sipho | 2005-10-01 | Inkosi Albert Luthuli |
+| Lerato | Nomsa | Sipho | 1990-01-01 | King Edward VIII |
+| Zanele | NULL | NULL | 1995-12-20 | Groote Schuur |
+
+> Zanele has NULL parents — parent details were not recorded.
+
 **10. Province with most registered citizens:**
 
 ```sql
@@ -411,6 +509,12 @@ ORDER BY citizen_count DESC
 LIMIT 1;
 ```
 
+**Expected output:**
+
+| province | citizen_count |
+|---|---:|
+| Gauteng | 2 |
+
 **11. Count marriages per year:**
 
 ```sql
@@ -420,11 +524,26 @@ GROUP BY YEAR(marriage_date)
 ORDER BY marriage_year;
 ```
 
+**Expected output:**
+
+| marriage_year | total_marriages |
+|---:|---:|
+| 1998 | 1 |
+| 2018 | 1 |
+| 2022 | 1 |
+
 **12. Citizens whose last name starts with 'N':**
 
 ```sql
 SELECT * FROM citizen WHERE last_name LIKE 'N%';
 ```
+
+**Expected output:**
+
+| citizen_id | id_number | first_name | last_name | date_of_birth | gender | nationality | is_alive |
+|---:|---|---|---|---|---:|---|---:|
+| 2 | 8805125800082 | Thabo | Ndlovu | 1988-05-12 | M | South African | 1 |
+| 4 | 7008155800084 | Sipho | Nkosi | 1970-08-15 | M | South African | 0 |
 
 ### C4. Self-Join Challenge
 
@@ -440,7 +559,16 @@ LEFT JOIN citizen mother ON br.mother_citizen_id = mother.citizen_id
 LEFT JOIN citizen father ON br.father_citizen_id = father.citizen_id;
 ```
 
-> **How aliases help:** The `citizen` table is joined three times — once as `child`, once as `mother`, once as `father`. Without aliases, MySQL wouldn't know which instance of `citizen` you're referring to in each ON clause. Aliases give each join a distinct name.
+**Expected output:**
+
+| child_name | child_surname | mother_name | father_name |
+|---|---|---|---|
+| Kabelo | Sithole | Lerato | Thabo |
+| Naledi | Mahlangu | Nomsa | Sipho |
+| Lerato | Mokoena | Nomsa | Sipho |
+| Zanele | Dlamini | NULL | NULL |
+
+> The `citizen` table is joined three times — once as `child`, once as `mother`, once as `father`. Without aliases, MySQL wouldn't know which instance of `citizen` you're referring to in each ON clause. Aliases give each join a distinct name.
 
 </details>
 

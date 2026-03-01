@@ -329,6 +329,23 @@ INNER JOIN customer c ON a.customer_id = c.customer_id
 INNER JOIN branch b ON a.branch_id = b.branch_id;
 ```
 
+**Expected output (10 rows):**
+
+| account_number | customer_name | account_type | balance | branch_name | status |
+|---|---|---|---:|---|---|
+| ACC-001-SAV | Lerato Mokoena | savings | 15000.00 | Johannesburg Central | active |
+| ACC-001-CHQ | Lerato Mokoena | cheque | 5200.50 | Johannesburg Central | active |
+| ACC-002-SAV | Thabo Ndlovu | savings | 8500.00 | Johannesburg Central | active |
+| ACC-003-SAV | Nomsa Khumalo | savings | 32000.00 | Durban Beach | active |
+| ACC-003-FD | Nomsa Khumalo | fixed deposit | 100000.00 | Durban Beach | active |
+| ACC-004-SAV | Zanele Dlamini | savings | 2100.75 | Cape Town Waterfront | active |
+| ACC-004-CHQ | Zanele Dlamini | cheque | 500.00 | Cape Town Waterfront | frozen |
+| ACC-005-SAV | Kabelo Sithole | savings | 750.00 | Johannesburg Central | active |
+| ACC-006-SAV | Palesa Molefe | savings | 18500.00 | Johannesburg Central | active |
+| ACC-006-CHQ | Palesa Molefe | cheque | 4200.00 | Cape Town Waterfront | active |
+
+> Lerato, Nomsa, Zanele, and Palesa each have 2 accounts.
+
 **2. Total balance per branch:**
 
 ```sql
@@ -341,6 +358,16 @@ WHERE a.status = 'active'
 GROUP BY b.branch_id, b.name
 ORDER BY total_balance DESC;
 ```
+
+**Expected output:**
+
+| branch_name | total_balance |
+|---|---:|
+| Durban Beach | 132000.00 |
+| Johannesburg Central | 47950.50 |
+| Cape Town Waterfront | 6300.75 |
+
+> Durban leads because of Nomsa's R100,000 fixed deposit. Zanele's frozen cheque (R500) is excluded.
 
 **3. Top 5 customers by total balance:**
 
@@ -356,6 +383,16 @@ ORDER BY total_balance DESC
 LIMIT 5;
 ```
 
+**Expected output:**
+
+| customer_name | total_balance |
+|---|---:|
+| Nomsa Khumalo | 132000.00 |
+| Palesa Molefe | 22700.00 |
+| Lerato Mokoena | 20200.50 |
+| Thabo Ndlovu | 8500.00 |
+| Zanele Dlamini | 2100.75 |
+
 **4. Transactions for a specific account, newest first:**
 
 ```sql
@@ -363,6 +400,16 @@ SELECT * FROM transaction
 WHERE account_id = 1
 ORDER BY transaction_date DESC;
 ```
+
+**Expected output:**
+
+| transaction_id | account_id | transaction_type | amount | transaction_date | description | reference_number |
+|---:|---:|---|---:|---|---|---|
+| 8 | 1 | transfer | 1000.00 | 2026-02-10 13:00:00 | Transfer to Thabo | REF-008 |
+| 2 | 1 | withdrawal | 1500.00 | 2026-01-10 14:30:00 | ATM withdrawal | REF-002 |
+| 1 | 1 | deposit | 5000.00 | 2026-01-05 09:15:00 | Salary deposit | REF-001 |
+
+> Three transactions for Account 1 (Lerato's savings), newest first.
 
 **5. Total deposits and withdrawals per account:**
 
@@ -376,6 +423,21 @@ INNER JOIN account a ON t.account_id = a.account_id
 GROUP BY a.account_id, a.account_number;
 ```
 
+**Expected output:**
+
+| account_number | total_deposits | total_withdrawals |
+|---|---:|---:|
+| ACC-001-SAV | 5000.00 | 1500.00 |
+| ACC-001-CHQ | 2000.00 | 0.00 |
+| ACC-002-SAV | 3000.00 | 500.00 |
+| ACC-003-SAV | 10000.00 | 3000.00 |
+| ACC-004-SAV | 1500.00 | 800.00 |
+| ACC-005-SAV | 500.00 | 0.00 |
+| ACC-006-SAV | 8000.00 | 2500.00 |
+| ACC-006-CHQ | 1200.00 | 0.00 |
+
+> Transfer-type transactions don't appear in either column — only deposits and withdrawals.
+
 **6. Customers with accounts at more than one branch:**
 
 ```sql
@@ -387,6 +449,14 @@ INNER JOIN customer c ON a.customer_id = c.customer_id
 GROUP BY c.customer_id, c.first_name, c.last_name
 HAVING COUNT(DISTINCT a.branch_id) > 1;
 ```
+
+**Expected output:**
+
+| customer_name | branch_count |
+|---|---:|
+| Palesa Molefe | 2 |
+
+> Palesa has accounts at both Johannesburg Central and Cape Town Waterfront.
 
 **7. Frozen or closed accounts with customer details:**
 
@@ -402,6 +472,14 @@ INNER JOIN customer c ON a.customer_id = c.customer_id
 WHERE a.status IN ('frozen', 'closed');
 ```
 
+**Expected output:**
+
+| account_number | account_type | status | balance | customer_name |
+|---|---|---|---:|---|
+| ACC-004-CHQ | cheque | frozen | 500.00 | Zanele Dlamini |
+
+> Only one account is frozen. No accounts are closed.
+
 **8. Average balance per account type:**
 
 ```sql
@@ -412,6 +490,16 @@ FROM account
 WHERE status = 'active'
 GROUP BY account_type;
 ```
+
+**Expected output:**
+
+| account_type | avg_balance |
+|---|---:|
+| savings | 12808.46 |
+| cheque | 4700.25 |
+| fixed deposit | 100000.00 |
+
+> Fixed deposit has the highest average because it's a long-term investment product.
 
 **9. Monthly transaction volume (current year):**
 
@@ -425,6 +513,15 @@ WHERE YEAR(transaction_date) = 2026
 GROUP BY MONTH(transaction_date)
 ORDER BY month;
 ```
+
+**Expected output:**
+
+| month | transaction_count | total_amount |
+|---:|---:|---:|
+| 1 | 5 | 12000.00 |
+| 2 | 10 | 29500.00 |
+
+> February is busier with double the transactions.
 
 **10. Dormant accounts (no transactions in last 90 days):**
 
@@ -440,6 +537,15 @@ GROUP BY a.account_id, a.account_number, c.first_name, c.last_name
 HAVING MAX(t.transaction_date) IS NULL
    OR DATEDIFF(CURDATE(), MAX(t.transaction_date)) > 90;
 ```
+
+**Expected output (depends on current date — if run in mid-2026):**
+
+| account_number | customer_name | last_transaction |
+|---|---|---|
+| ACC-003-FD | Nomsa Khumalo | NULL |
+| ACC-004-CHQ | Zanele Dlamini | NULL |
+
+> These two accounts have zero transactions. Other accounts may appear if >90 days have passed since their last transaction.
 
 **11. Failed transfers:**
 
@@ -457,6 +563,14 @@ INNER JOIN account a2 ON t.to_account_id = a2.account_id
 WHERE t.status = 'failed';
 ```
 
+**Expected output:**
+
+| transfer_id | from_account | to_account | amount | transfer_date | status |
+|---:|---|---|---:|---|---|
+| 4 | ACC-005-SAV | ACC-001-SAV | 5000.00 | 2026-02-25 14:00:00 | failed |
+
+> Kabelo's account (ACC-005-SAV) only has R750 — insufficient for a R5000 transfer.
+
 **12. Bank summary:**
 
 ```sql
@@ -466,6 +580,12 @@ SELECT
   (SELECT SUM(balance) FROM account WHERE status = 'active') AS total_balance,
   (SELECT COUNT(*) FROM transaction) AS total_transactions;
 ```
+
+**Expected output:**
+
+| total_customers | total_accounts | total_balance | total_transactions |
+|---:|---:|---:|---:|
+| 6 | 10 | 186251.25 | 15 |
 
 ### C4. Balance verification
 

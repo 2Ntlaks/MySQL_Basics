@@ -94,13 +94,38 @@ INSERT INTO passport (passport_id, person_id, passport_number) VALUES
 
 -- Practice query samples
 SELECT * FROM student;
+-- Expected output:
+-- +------------+----------------+----------------+------------------+------+
+-- | student_id | student_number | name           | email            | age  |
+-- +------------+----------------+----------------+------------------+------+
+-- |          1 | 2026001        | Amahle Mokoena | amahle@uni.ac.za |   20 |
+-- |          2 | 2026002        | Lebo Ncube     | lebo@uni.ac.za   |   19 |
+-- |          3 | 2026003        | Sipho Dlamini  | sipho@uni.ac.za  |   21 |
+-- +------------+----------------+----------------+------------------+------+
 
 SELECT department_id, COUNT(*) AS lecturer_count
 FROM lecturer
 GROUP BY department_id
 HAVING COUNT(*) >= 1;
+-- Expected output:
+-- +---------------+-----------------+
+-- | department_id | lecturer_count  |
+-- +---------------+-----------------+
+-- |             1 |               2 |
+-- |             2 |               1 |
+-- +---------------+-----------------+
 
 SELECT s.name AS student_name, m.name AS module_name
 FROM enrollment e
 INNER JOIN student s ON e.student_id = s.student_id
 INNER JOIN module m ON e.module_id = m.module_id;
+-- Expected output:
+-- +----------------+---------------------------+
+-- | student_name   | module_name               |
+-- +----------------+---------------------------+
+-- | Amahle Mokoena | Database Systems          |
+-- | Amahle Mokoena | Web Basics                |
+-- | Lebo Ncube     | Database Systems          |
+-- | Sipho Dlamini  | Database Systems          |
+-- | Sipho Dlamini  | Programming Fundamentals  |
+-- +----------------+---------------------------+

@@ -20,6 +20,15 @@ SELECT * FROM student
 WHERE age >= 20;
 ```
 
+**Expected output (using lab data):**
+
+| student_id | student_number | name | email | age |
+|---:|---|---|---|---:|
+| 1 | 2026001 | Amahle Mokoena | amahle@uni.ac.za | 20 |
+| 3 | 2026003 | Sipho Dlamini | sipho@uni.ac.za | 21 |
+
+> Lebo (age 19) is excluded because 19 < 20.
+
 Useful operators:
 
 - `=`, `!=`, `>`, `<`, `>=`, `<=`
@@ -89,11 +98,29 @@ WHERE student_number LIKE '_______';
 -- Find students with no email
 SELECT * FROM student
 WHERE email IS NULL;
+```
 
+**Expected output (using lab data):**
+
+```
+Empty set (0 rows)
+```
+
+> All students in our lab data have emails. If any student had `NULL` for email, they would appear here.
+
+```sql
 -- Find students who have an email
 SELECT * FROM student
 WHERE email IS NOT NULL;
 ```
+
+**Expected output:**
+
+| student_id | student_number | name | email | age |
+|---:|---|---|---|---:|
+| 1 | 2026001 | Amahle Mokoena | amahle@uni.ac.za | 20 |
+| 2 | 2026002 | Lebo Ncube | lebo@uni.ac.za | 19 |
+| 3 | 2026003 | Sipho Dlamini | sipho@uni.ac.za | 21 |
 
 > [!WARNING]
 > Never use `= NULL` or `!= NULL`. These do not work in SQL. Always use `IS NULL` / `IS NOT NULL`.
@@ -104,11 +131,25 @@ WHERE email IS NOT NULL;
 -- IFNULL: replace NULL with a default
 SELECT name, IFNULL(email, 'no email') AS email
 FROM student;
+```
 
+**Expected output:**
+
+| name | email |
+|---|---|
+| Amahle Mokoena | amahle@uni.ac.za |
+| Lebo Ncube | lebo@uni.ac.za |
+| Sipho Dlamini | sipho@uni.ac.za |
+
+> Since no emails are NULL here, `IFNULL` returns the actual email. If a student had no email, `'no email'` would show instead.
+
+```sql
 -- COALESCE: return first non-NULL value
 SELECT COALESCE(email, phone, 'no contact') AS contact_info
 FROM student;
 ```
+
+> `COALESCE` checks each value left to right and returns the first one that isn't NULL.
 
 ---
 
@@ -131,6 +172,15 @@ SELECT department_id, COUNT(*) AS total_lecturers
 FROM lecturer
 GROUP BY department_id;
 ```
+
+**Expected output:**
+
+| department_id | total_lecturers |
+|---:|---:|
+| 1 | 2 |
+| 2 | 1 |
+
+> Department 1 (Computer Science) has 2 lecturers (Dr. Khumalo, Ms. Naidoo). Department 2 (Mathematics) has 1 (Dr. Ndlovu).
 
 ---
 
@@ -155,6 +205,20 @@ FROM lecturer
 GROUP BY department_id
 HAVING COUNT(*) >= 3;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> No department has 3+ lecturers. If we change `>= 3` to `>= 2`, we'd get department 1.
+
+**With `HAVING COUNT(*) >= 2`:**
+
+| department_id | total_lecturers |
+|---:|---:|
+| 1 | 2 |
 
 ---
 
@@ -187,6 +251,14 @@ SELECT
   MAX(age) AS oldest
 FROM student;
 ```
+
+**Expected output:**
+
+| total_students | average_age | youngest | oldest |
+|---:|---:|---:|---:|
+| 3 | 20.0000 | 19 | 21 |
+
+> Three students exist. Average of (20 + 19 + 21) = 60 / 3 = 20.
 
 ---
 

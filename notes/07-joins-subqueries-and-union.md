@@ -32,6 +32,18 @@ INNER JOIN student s ON e.student_id = s.student_id
 INNER JOIN module m ON e.module_id = m.module_id;
 ```
 
+**Expected output (using lab data):**
+
+| student_id | student_name | module_name |
+|---:|---|---|
+| 1 | Amahle Mokoena | Database Systems |
+| 1 | Amahle Mokoena | Web Basics |
+| 2 | Lebo Ncube | Database Systems |
+| 3 | Sipho Dlamini | Database Systems |
+| 3 | Sipho Dlamini | Programming Fundamentals |
+
+> Only students **with** enrollments appear. If a student isn't enrolled in anything, they won't show up.
+
 ---
 
 ## 3. LEFT JOIN
@@ -46,6 +58,16 @@ SELECT
 FROM department d
 LEFT JOIN lecturer l ON d.department_id = l.department_id;
 ```
+
+**Expected output:**
+
+| department_id | department_name | lecturer_name |
+|---:|---|---|
+| 1 | Computer Science | Dr. Khumalo |
+| 1 | Computer Science | Ms. Naidoo |
+| 2 | Mathematics | Dr. Ndlovu |
+
+> If a department had no lecturers, it would still appear with `NULL` in the lecturer_name column. That's the power of LEFT JOIN.
 
 Use this when you want to keep rows even if related data is missing.
 
@@ -63,6 +85,16 @@ FROM department d
 RIGHT JOIN lecturer l ON d.department_id = l.department_id;
 ```
 
+**Expected output:**
+
+| department_name | lecturer_name |
+|---|---|
+| Computer Science | Dr. Khumalo |
+| Computer Science | Ms. Naidoo |
+| Mathematics | Dr. Ndlovu |
+
+> With this data, RIGHT JOIN and LEFT JOIN produce similar results because every lecturer belongs to a department. RIGHT JOIN would show its difference if a lecturer had a NULL department_id.
+
 > [!NOTE]
 > `RIGHT JOIN` is the mirror of `LEFT JOIN`. Most developers prefer rewriting as `LEFT JOIN` by swapping table order, but you should recognise both forms.
 
@@ -77,6 +109,20 @@ SELECT s.name, m.name
 FROM student s
 CROSS JOIN module m;
 ```
+
+**Expected output (3 students × 3 modules = 9 rows):**
+
+| name | name |
+|---|---|
+| Amahle Mokoena | Database Systems |
+| Amahle Mokoena | Web Basics |
+| Amahle Mokoena | Programming Fundamentals |
+| Lebo Ncube | Database Systems |
+| Lebo Ncube | Web Basics |
+| Lebo Ncube | Programming Fundamentals |
+| Sipho Dlamini | Database Systems |
+| Sipho Dlamini | Web Basics |
+| Sipho Dlamini | Programming Fundamentals |
 
 If `student` has 3 rows and `module` has 3 rows, you get 9 result rows.
 
@@ -110,6 +156,16 @@ WHERE student_id IN (
 );
 ```
 
+**Expected output:**
+
+| student_id |
+|---:|
+| 1 |
+| 2 |
+| 3 |
+
+> All three students have enrollment records. If a student wasn't enrolled, they'd be excluded.
+
 Meaning:
 
 - Return students who appear in enrollment records.
@@ -137,6 +193,19 @@ SELECT email FROM student
 UNION
 SELECT email FROM lecturer;
 ```
+
+**Expected output:**
+
+| email |
+|---|
+| amahle@uni.ac.za |
+| lebo@uni.ac.za |
+| sipho@uni.ac.za |
+| khumalo@uni.ac.za |
+| naidoo@uni.ac.za |
+| ndlovu@uni.ac.za |
+
+> All 6 unique emails from both tables combined into one list. Duplicates (if any) are removed automatically.
 
 Rules:
 

@@ -31,15 +31,43 @@ After this lesson, you should be able to:
 -- Full name from first and last name columns
 SELECT CONCAT(first_name, ' ', last_name) AS full_name
 FROM lecturer;
+```
 
+**Expected output (using lab data where lecturer has a `name` column):**
+
+| full_name |
+|---|
+| Dr. Khumalo |
+| Ms. Naidoo |
+| Dr. Ndlovu |
+
+```sql
 -- Standardize email to lowercase
 SELECT LOWER(email) AS clean_email
 FROM student;
+```
 
+**Expected output:**
+
+| clean_email |
+|---|
+| amahle@uni.ac.za |
+| lebo@uni.ac.za |
+| sipho@uni.ac.za |
+
+```sql
 -- Extract year from a code like 'DBS2026'
-SELECT LEFT(code, 3) AS prefix, RIGHT(code, 4) AS year_part
+SELECT LEFT(code, 3) AS prefix, RIGHT(code, 3) AS suffix
 FROM module;
 ```
+
+**Expected output:**
+
+| prefix | suffix |
+|---|---|
+| DBS | 101 |
+| WBG | 101 |
+| PRG | 101 |
 
 ---
 
@@ -63,17 +91,38 @@ FROM module;
 -- Students born in 2005
 SELECT * FROM student
 WHERE YEAR(date_of_birth) = 2005;
+```
 
+**Expected output (lab data has no DOB in 2005):**
+
+```
+Empty set (0 rows)
+```
+
+```sql
 -- How many days since enrollment
 SELECT
   student_id,
   enrolled_at,
   DATEDIFF(CURDATE(), enrolled_at) AS days_enrolled
 FROM enrollment;
+```
 
+**Expected output (example — values depend on current date):**
+
+| student_id | enrolled_at | days_enrolled |
+|---:|---|---:|
+| 1 | 2026-02-15 10:30:00 | 14 |
+| 1 | 2026-02-15 10:30:00 | 14 |
+| ... | ... | ... |
+
+> The `days_enrolled` will change daily. If `enrolled_at` was 14 days ago, the result is `14`.
+
+```sql
 -- Enrollments in the last 30 days
 SELECT * FROM enrollment
 WHERE enrolled_at >= DATE_ADD(CURDATE(), INTERVAL -30 DAY);
+```
 
 -- Format date for display
 SELECT name, DATE_FORMAT(date_of_birth, '%d %M %Y') AS dob_display
@@ -133,6 +182,14 @@ SELECT name, age,
 FROM student;
 ```
 
+**Expected output:**
+
+| name | age | category |
+|---|---:|---|
+| Amahle Mokoena | 20 | Junior |
+| Lebo Ncube | 19 | Junior |
+| Sipho Dlamini | 21 | Senior |
+
 ### CASE
 
 ```sql
@@ -144,6 +201,14 @@ SELECT name, age,
   END AS age_group
 FROM student;
 ```
+
+**Expected output:**
+
+| name | age | age_group |
+|---|---:|---|
+| Amahle Mokoena | 20 | Young Adult |
+| Lebo Ncube | 19 | Young Adult |
+| Sipho Dlamini | 21 | Young Adult |
 
 > [!TIP]
 > `CASE` is more flexible than `IF` when you have multiple conditions.

@@ -290,11 +290,34 @@ INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total) VA
 SELECT * FROM product ORDER BY price DESC;
 ```
 
+**Expected output:**
+
+| product_id | name | category_id | price | stock_quantity | size | colour |
+|---:|---|---:|---:|---:|---|---|
+| 5 | Running Shoes | 3 | 899.99 | 10 | 9 | Grey |
+| 7 | Denim Jacket | 1 | 699.99 | 8 | L | Blue |
+| 9 | Canvas Sneakers | 3 | 549.99 | 12 | 10 | White |
+| 3 | Slim Jeans | 2 | 499.99 | 20 | 32 | Black |
+| 4 | Chino Pants | 2 | 399.99 | 18 | 34 | Khaki |
+| 2 | Formal Shirt | 1 | 349.99 | 15 | L | Blue |
+| 8 | Sports Shorts | 2 | 249.99 | 22 | M | Navy |
+| 6 | Leather Belt | 4 | 199.99 | 30 | NULL | Brown |
+| 1 | Cotton T-Shirt | 1 | 149.99 | 25 | M | White |
+| 10 | Wool Beanie | 4 | 129.99 | 40 | NULL | Grey |
+
 **2. Low stock alert (below 5):**
 
 ```sql
 SELECT name, stock_quantity FROM product WHERE stock_quantity < 5;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> All products have stock ≥ 8, so no low-stock alerts.
 
 **3. Total revenue per category:**
 
@@ -309,6 +332,17 @@ GROUP BY cat.category_id, cat.name
 ORDER BY total_revenue DESC;
 ```
 
+**Expected output:**
+
+| category | total_revenue |
+|---|---:|
+| Shirts | 1699.95 |
+| Shoes | 1449.98 |
+| Pants | 1149.97 |
+| Accessories | 1059.94 |
+
+> Shirts lead because of the Denim Jacket (R699.99) and 2× Formal Shirt (R699.98).
+
 **4. Top 5 best-selling products by quantity:**
 
 ```sql
@@ -321,6 +355,18 @@ GROUP BY p.product_id, p.name
 ORDER BY total_sold DESC
 LIMIT 5;
 ```
+
+**Expected output:**
+
+| name | total_sold |
+|---|---:|
+| Leather Belt | 4 |
+| Cotton T-Shirt | 2 |
+| Formal Shirt | 2 |
+| Wool Beanie | 2 |
+| Running Shoes | 1 |
+
+> Leather Belt is the best seller — it appeared in 4 separate sale items.
 
 **5. Customers who spent more than R1000:**
 
@@ -335,6 +381,16 @@ GROUP BY c.customer_id, c.first_name, c.last_name
 HAVING SUM(s.total_amount) > 1000;
 ```
 
+**Expected output:**
+
+| first_name | last_name | total_spent |
+|---|---|---:|
+| Amahle | Mokoena | 1879.95 |
+| Lebo | Ncube | 1449.98 |
+| Kagiso | Molefe | 1399.98 |
+
+> Amahle is the biggest spender with 3 purchases totalling R1879.95.
+
 **6. Monthly sales totals for current year:**
 
 ```sql
@@ -348,6 +404,15 @@ GROUP BY MONTH(sale_date)
 ORDER BY month;
 ```
 
+**Expected output:**
+
+| month | total_sales | monthly_revenue |
+|---:|---:|---:|
+| 1 | 2 | 1549.97 |
+| 2 | 6 | 3829.91 |
+
+> February has 3× more sales than January.
+
 **7. Products never sold:**
 
 ```sql
@@ -356,6 +421,14 @@ FROM product p
 LEFT JOIN sale_item si ON p.product_id = si.product_id
 WHERE si.sale_item_id IS NULL;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> Every product has been sold at least once.
 
 **8. Staff member with most sales:**
 
@@ -371,6 +444,14 @@ ORDER BY sale_count DESC
 LIMIT 1;
 ```
 
+**Expected output:**
+
+| first_name | last_name | sale_count |
+|---|---|---:|
+| Bongani | Sithole | 5 |
+
+> Bongani handled 5 of the 8 total sales.
+
 **9. Average sale value per staff member:**
 
 ```sql
@@ -383,11 +464,28 @@ INNER JOIN staff st ON s.staff_id = st.staff_id
 GROUP BY st.staff_id, st.first_name, st.last_name;
 ```
 
+**Expected output:**
+
+| first_name | last_name | avg_sale |
+|---|---|---:|
+| Bongani | Sithole | 535.99 |
+| Palesa | Khumalo | 899.98 |
+
+> Palesa has a higher average because she processed the R1399.98 sale.
+
 **10. Products with "jacket" in the name:**
 
 ```sql
 SELECT * FROM product WHERE name LIKE '%jacket%';
 ```
+
+**Expected output:**
+
+| product_id | name | category_id | price | stock_quantity | size | colour |
+|---:|---|---:|---:|---:|---|---|
+| 7 | Denim Jacket | 1 | 699.99 | 8 | L | Blue |
+
+> LIKE is case-insensitive — 'jacket' matches 'Jacket'.
 
 **11. Profit with 40% markup:**
 
@@ -400,6 +498,21 @@ SELECT
 FROM product;
 ```
 
+**Expected output:**
+
+| name | cost | selling_price | profit |
+|---|---:|---:|---:|
+| Cotton T-Shirt | 107.14 | 149.99 | 42.85 |
+| Formal Shirt | 249.99 | 349.99 | 100.00 |
+| Slim Jeans | 357.14 | 499.99 | 142.85 |
+| Chino Pants | 285.71 | 399.99 | 114.28 |
+| Running Shoes | 642.85 | 899.99 | 257.14 |
+| Leather Belt | 142.85 | 199.99 | 57.14 |
+| Denim Jacket | 499.99 | 699.99 | 200.00 |
+| Sports Shorts | 178.56 | 249.99 | 71.43 |
+| Canvas Sneakers | 392.85 | 549.99 | 157.14 |
+| Wool Beanie | 92.85 | 129.99 | 37.14 |
+
 **12. Summary report:**
 
 ```sql
@@ -409,6 +522,12 @@ SELECT
   (SELECT COUNT(*) FROM sale) AS total_sales,
   (SELECT SUM(total_amount) FROM sale) AS total_revenue;
 ```
+
+**Expected output:**
+
+| total_products | total_customers | total_sales | total_revenue |
+|---:|---:|---:|---:|
+| 10 | 5 | 8 | 5379.88 |
 
 ### C4. Inventory Management
 
@@ -426,6 +545,14 @@ WHERE product_id = 5;
 SELECT name FROM product WHERE stock_quantity = 0;
 ```
 
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> No products are out of stock. Stock was not reduced in this sample.
+
 **3. Current inventory value:**
 
 ```sql
@@ -437,6 +564,21 @@ SELECT
 FROM product
 ORDER BY inventory_value DESC;
 ```
+
+**Expected output:**
+
+| name | stock_quantity | price | inventory_value |
+|---|---:|---:|---:|
+| Slim Jeans | 20 | 499.99 | 9999.80 |
+| Running Shoes | 10 | 899.99 | 8999.90 |
+| Chino Pants | 18 | 399.99 | 7199.82 |
+| Canvas Sneakers | 12 | 549.99 | 6599.88 |
+| Leather Belt | 30 | 199.99 | 5999.70 |
+| Denim Jacket | 8 | 699.99 | 5599.92 |
+| Sports Shorts | 22 | 249.99 | 5499.78 |
+| Formal Shirt | 15 | 349.99 | 5249.85 |
+| Wool Beanie | 40 | 129.99 | 5199.60 |
+| Cotton T-Shirt | 25 | 149.99 | 3749.75 |
 
 </details>
 

@@ -258,6 +258,20 @@ INNER JOIN reader r ON l.reader_id = r.reader_id
 INNER JOIN book b ON l.book_id = b.book_id;
 ```
 
+**Expected output:**
+
+| loan_id | reader_name | book_title | loan_date | due_date | return_date |
+|---:|---|---|---|---|---|
+| 1 | Amahle Mokoena | Things Fall Apart | 2026-01-10 | 2026-01-24 | 2026-01-20 |
+| 2 | Amahle Mokoena | Long Walk to Freedom | 2026-02-01 | 2026-02-15 | NULL |
+| 3 | Lebo Ncube | Things Fall Apart | 2026-01-15 | 2026-01-29 | 2026-01-28 |
+| 4 | Lebo Ncube | Cry, the Beloved Country | 2026-02-05 | 2026-02-19 | NULL |
+| 5 | Sipho Dlamini | Born a Crime | 2026-02-10 | 2026-02-24 | NULL |
+| 6 | Thandi Nkosi | The Alchemist | 2026-01-20 | 2026-02-03 | 2026-02-01 |
+| 7 | Thandi Nkosi | Things Fall Apart | 2026-02-12 | 2026-02-26 | NULL |
+
+> The JOIN replaces IDs with readable names. `NULL` in return_date means the book is still on loan.
+
 ### C4. Count loans per reader
 
 ```sql
@@ -268,6 +282,17 @@ FROM loan l
 INNER JOIN reader r ON l.reader_id = r.reader_id
 GROUP BY r.reader_id, r.full_name;
 ```
+
+**Expected output:**
+
+| full_name | total_loans |
+|---|---:|
+| Amahle Mokoena | 2 |
+| Lebo Ncube | 2 |
+| Sipho Dlamini | 1 |
+| Thandi Nkosi | 2 |
+
+> Kagiso Molefe doesn't appear because he has 0 loans (INNER JOIN excludes him).
 
 ### C5. Show readers with more than 1 loan
 
@@ -280,6 +305,16 @@ INNER JOIN reader r ON l.reader_id = r.reader_id
 GROUP BY r.reader_id, r.full_name
 HAVING COUNT(*) > 1;
 ```
+
+**Expected output:**
+
+| full_name | total_loans |
+|---|---:|
+| Amahle Mokoena | 2 |
+| Lebo Ncube | 2 |
+| Thandi Nkosi | 2 |
+
+> Sipho (1 loan) is filtered out by `HAVING COUNT(*) > 1`.
 
 </details>
 

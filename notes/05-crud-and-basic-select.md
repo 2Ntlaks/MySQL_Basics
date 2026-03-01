@@ -55,11 +55,25 @@ Get all columns:
 SELECT * FROM student;
 ```
 
+**Expected output:**
+
+| student_id | full_name | email | age |
+|---:|---|---|---:|
+| 1 | Amahle Mokoena | amahle@uni.ac.za | 20 |
+| 2 | Lebo Ncube | lebo@uni.ac.za | 19 |
+
 Get selected columns:
 
 ```sql
 SELECT full_name, email FROM student;
 ```
+
+**Expected output:**
+
+| full_name | email |
+|---|---|
+| Amahle Mokoena | amahle@uni.ac.za |
+| Lebo Ncube | lebo@uni.ac.za |
 
 ---
 
@@ -70,6 +84,18 @@ UPDATE student
 SET age = 21
 WHERE student_id = 1;
 ```
+
+**Verify the change:**
+
+```sql
+SELECT * FROM student WHERE student_id = 1;
+```
+
+**Expected output:**
+
+| student_id | full_name | email | age |
+|---:|---|---|---:|
+| 1 | Amahle Mokoena | amahle@uni.ac.za | 21 |
 
 > [!WARNING]
 > Never run `UPDATE` without `WHERE` unless you intentionally want to update every row.
@@ -97,6 +123,14 @@ SELECT full_name, age FROM student
 ORDER BY age ASC;
 ```
 
+**Expected output (using lab data):**
+
+| full_name | age |
+|---|---:|
+| Lebo Ncube | 19 |
+| Amahle Mokoena | 20 |
+| Sipho Dlamini | 21 |
+
 - `ASC` = ascending (default, smallest first)
 - `DESC` = descending (largest first)
 
@@ -119,6 +153,14 @@ ORDER BY age DESC
 LIMIT 3;
 ```
 
+**Expected output:**
+
+| student_id | full_name | email | age |
+|---:|---|---|---:|
+| 3 | Sipho Dlamini | sipho@uni.ac.za | 21 |
+| 1 | Amahle Mokoena | amahle@uni.ac.za | 20 |
+| 2 | Lebo Ncube | lebo@uni.ac.za | 19 |
+
 Get rows 4–6 (skip first 3):
 
 ```sql
@@ -140,6 +182,16 @@ Use `AS` to rename columns in output:
 SELECT full_name AS student_name, age AS student_age
 FROM student;
 ```
+
+**Expected output:**
+
+| student_name | student_age |
+|---|---:|
+| Amahle Mokoena | 20 |
+| Lebo Ncube | 19 |
+| Sipho Dlamini | 21 |
+
+> Notice the column headers now say `student_name` and `student_age` instead of `full_name` and `age`.
 
 Aliases make output more readable and are required when using aggregate functions.
 

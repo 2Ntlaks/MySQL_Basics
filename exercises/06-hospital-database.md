@@ -339,6 +339,13 @@ WHERE appointment_date = CURDATE()
 ORDER BY appointment_time ASC;
 ```
 
+**Expected output:** Results depend on the current date. If run on 2026-02-01:
+
+| appointment_id | patient_id | doctor_id | appointment_date | appointment_time | status | notes |
+|---:|---:|---:|---|---|---|---|
+| 1 | 1 | 1 | 2026-02-01 | 09:00:00 | completed | Routine checkup |
+| 2 | 2 | 1 | 2026-02-01 | 10:00:00 | completed | Flu symptoms |
+
 **2. Appointments with patient and doctor names:**
 
 ```sql
@@ -354,6 +361,25 @@ INNER JOIN patient p ON a.patient_id = p.patient_id
 INNER JOIN doctor d ON a.doctor_id = d.doctor_id;
 ```
 
+**Expected output (12 rows):**
+
+| appointment_id | patient_name | doctor_name | appointment_date | appointment_time | status |
+|---:|---|---|---|---|---|
+| 1 | Amahle Mokoena | Dr. James Khumalo | 2026-02-01 | 09:00:00 | completed |
+| 2 | Lebo Ncube | Dr. James Khumalo | 2026-02-01 | 10:00:00 | completed |
+| 3 | Sipho Dlamini | Dr. Mark Botha | 2026-02-03 | 11:00:00 | completed |
+| 4 | Thandi Nkosi | Dr. Sarah Pillay | 2026-02-05 | 09:30:00 | completed |
+| 5 | Amahle Mokoena | Dr. James Khumalo | 2026-02-10 | 09:00:00 | completed |
+| 6 | Kagiso Molefe | Dr. James Khumalo | 2026-02-12 | 14:00:00 | completed |
+| 7 | Zanele Mahlangu | Dr. Fatima Ahmed | 2026-02-15 | 10:00:00 | completed |
+| 8 | Lebo Ncube | Dr. Mark Botha | 2026-02-18 | 11:30:00 | completed |
+| 9 | Bongani Sithole | Dr. James Khumalo | 2026-02-20 | 09:00:00 | cancelled |
+| 10 | Amahle Mokoena | Dr. James Khumalo | 2026-03-01 | 09:00:00 | scheduled |
+| 11 | Sipho Dlamini | Dr. Mark Botha | 2026-03-05 | 11:00:00 | scheduled |
+| 12 | Naledi Van Wyk | Dr. Sarah Pillay | 2026-03-10 | 10:00:00 | scheduled |
+
+> CONCAT combines first and last name into a single readable column.
+
 **3. All unpaid bills:**
 
 ```sql
@@ -367,6 +393,17 @@ INNER JOIN appointment a ON b.appointment_id = a.appointment_id
 INNER JOIN patient p ON a.patient_id = p.patient_id
 WHERE b.paid = FALSE;
 ```
+
+**Expected output:**
+
+| billing_id | patient_name | total_amount | appointment_date |
+|---:|---|---:|---|
+| 6 | Kagiso Molefe | 550.00 | 2026-02-12 |
+| 8 | Lebo Ncube | 900.00 | 2026-02-18 |
+| 9 | Bongani Sithole | 0.00 | 2026-02-20 |
+| 10 | Amahle Mokoena | 550.00 | 2026-03-01 |
+
+> R2000.00 total outstanding across 4 unpaid bills.
 
 **4. Total revenue per doctor:**
 
@@ -382,6 +419,17 @@ GROUP BY d.doctor_id, d.first_name, d.last_name
 ORDER BY total_revenue DESC;
 ```
 
+**Expected output:**
+
+| doctor_name | total_revenue |
+|---|---:|
+| Dr. James Khumalo | 1850.00 |
+| Dr. Mark Botha | 1500.00 |
+| Dr. Fatima Ahmed | 700.00 |
+| Dr. Sarah Pillay | 650.00 |
+
+> Dr. Khumalo generates the most revenue — he sees the most patients.
+
 **5. Doctor with most appointments:**
 
 ```sql
@@ -395,6 +443,12 @@ ORDER BY appointment_count DESC
 LIMIT 1;
 ```
 
+**Expected output:**
+
+| doctor_name | appointment_count |
+|---|---:|
+| Dr. James Khumalo | 6 |
+
 **6. Frequent visitors (more than 3 appointments):**
 
 ```sql
@@ -406,6 +460,14 @@ INNER JOIN patient p ON a.patient_id = p.patient_id
 GROUP BY p.patient_id, p.first_name, p.last_name
 HAVING COUNT(*) > 3;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> No patient has more than 3 appointments. Amahle has exactly 3 (the most).
 
 **7. Severe diagnoses:**
 
@@ -420,6 +482,14 @@ INNER JOIN appointment a ON di.appointment_id = a.appointment_id
 INNER JOIN patient p ON a.patient_id = p.patient_id
 WHERE di.severity = 'severe';
 ```
+
+**Expected output:**
+
+| description | diagnosis_code | patient_name | appointment_date |
+|---|---|---|---|
+| Chest pain, unspecified | R07.9 | Sipho Dlamini | 2026-02-03 |
+
+> Only one severe diagnosis in the dataset.
 
 **8. Prescriptions for a specific patient (full chain):**
 
@@ -438,6 +508,17 @@ INNER JOIN patient p ON a.patient_id = p.patient_id
 WHERE p.patient_id = 2;
 ```
 
+**Expected output:**
+
+| patient_name | appointment_date | diagnosis | medication_name | dosage | frequency |
+|---|---|---|---|---|---|
+| Lebo Ncube | 2026-02-01 | Upper respiratory infection | Amoxicillin | 500mg | 3 times daily |
+| Lebo Ncube | 2026-02-01 | Upper respiratory infection | Paracetamol | 500mg | Every 6 hours |
+| Lebo Ncube | 2026-02-18 | Essential hypertension | Amlodipine | 5mg | Once daily |
+| Lebo Ncube | 2026-02-18 | Essential hypertension | Enalapril | 10mg | Once daily |
+
+> Lebo has been prescribed 4 medications across 2 visits.
+
 **9. Average consultation fee per specialization:**
 
 ```sql
@@ -448,6 +529,17 @@ FROM doctor
 GROUP BY specialization;
 ```
 
+**Expected output:**
+
+| specialization | avg_fee |
+|---|---:|
+| General Practice | 550.00 |
+| Pediatrics | 650.00 |
+| Cardiology | 900.00 |
+| Dermatology | 700.00 |
+
+> Each specialization has only one doctor, so AVG equals their individual fee.
+
 **10. Patients who have never visited:**
 
 ```sql
@@ -456,6 +548,14 @@ FROM patient p
 LEFT JOIN appointment a ON p.patient_id = a.patient_id
 WHERE a.appointment_id IS NULL;
 ```
+
+**Expected output:**
+
+```
+Empty set (0 rows)
+```
+
+> All 8 patients have at least one appointment.
 
 **11. Appointments per month (current year):**
 
@@ -469,6 +569,15 @@ GROUP BY MONTH(appointment_date)
 ORDER BY month;
 ```
 
+**Expected output:**
+
+| month | total_appointments |
+|---:|---:|
+| 2 | 9 |
+| 3 | 3 |
+
+> February is the busiest month with 9 appointments.
+
 **12. Billing summary:**
 
 ```sql
@@ -478,6 +587,14 @@ SELECT
   SUM(CASE WHEN paid = FALSE THEN total_amount ELSE 0 END) AS total_outstanding
 FROM billing;
 ```
+
+**Expected output:**
+
+| total_billed | total_paid | total_outstanding |
+|---:|---:|---:|
+| 6700.00 | 4700.00 | 2000.00 |
+
+> R2000 is still outstanding from 4 unpaid bills.
 
 ### C4. Multi-level JOIN (5 tables)
 
@@ -494,6 +611,21 @@ INNER JOIN appointment a ON di.appointment_id = a.appointment_id
 INNER JOIN patient p ON a.patient_id = p.patient_id
 INNER JOIN doctor d ON a.doctor_id = d.doctor_id;
 ```
+
+**Expected output (10 rows):**
+
+| patient_name | appointment_date | doctor_name | diagnosis | medication_name |
+|---|---|---|---|---|
+| Amahle Mokoena | 2026-02-01 | Dr. James Khumalo | General examination | Vitamin D |
+| Lebo Ncube | 2026-02-01 | Dr. James Khumalo | Upper respiratory infection | Amoxicillin |
+| Lebo Ncube | 2026-02-01 | Dr. James Khumalo | Upper respiratory infection | Paracetamol |
+| Sipho Dlamini | 2026-02-03 | Dr. Mark Botha | Chest pain, unspecified | Aspirin |
+| Sipho Dlamini | 2026-02-03 | Dr. Mark Botha | Chest pain, unspecified | Atorvastatin |
+| Thandi Nkosi | 2026-02-05 | Dr. Sarah Pillay | Dermatitis, unspecified | Hydrocortisone cream |
+| Kagiso Molefe | 2026-02-12 | Dr. James Khumalo | Headache | Ibuprofen |
+| Zanele Mahlangu | 2026-02-15 | Dr. Fatima Ahmed | Acne vulgaris | Benzoyl peroxide |
+| Lebo Ncube | 2026-02-18 | Dr. Mark Botha | Essential hypertension | Amlodipine |
+| Lebo Ncube | 2026-02-18 | Dr. Mark Botha | Essential hypertension | Enalapril |
 
 > **Join path:** prescription → diagnosis → appointment → patient AND appointment → doctor. The appointment table is the central link connecting everything.
 
@@ -513,6 +645,21 @@ LEFT JOIN appointment a ON p.patient_id = a.patient_id
 GROUP BY p.patient_id, p.first_name, p.last_name
 ORDER BY visit_count DESC;
 ```
+
+**Expected output:**
+
+| patient_name | visit_count | patient_category |
+|---|---:|---|
+| Amahle Mokoena | 3 | Occasional |
+| Lebo Ncube | 2 | Occasional |
+| Sipho Dlamini | 2 | Occasional |
+| Thandi Nkosi | 1 | Occasional |
+| Kagiso Molefe | 1 | Occasional |
+| Zanele Mahlangu | 1 | Occasional |
+| Bongani Sithole | 1 | Occasional |
+| Naledi Van Wyk | 1 | Occasional |
+
+> All patients are "Occasional" in this sample. With more data, the CASE would show variety.
 
 </details>
 
