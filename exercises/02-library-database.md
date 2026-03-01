@@ -432,31 +432,44 @@ FROM (
 <summary><strong>Part D: Transaction Solution</strong></summary>
 
 ```sql
-START TRANSACTION;
+DELIMITER //
 
--- Check available copies
-SELECT copies INTO @available FROM book WHERE book_id = 1;
+CREATE PROCEDURE borrow_book(IN p_member_id INT, IN p_book_id INT)
+BEGIN
+  DECLARE available INT;
 
--- If copies > 0, proceed
--- In a real application, you would use IF/ELSE in a stored procedure.
+  START TRANSACTION;
 
--- Record the loan
-INSERT INTO loan (member_id, book_id, loan_date, due_date)
-VALUES (2, 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY));
+  -- Lock the row and check copies
+  SELECT copies INTO available FROM book WHERE book_id = p_book_id FOR UPDATE;
 
--- Decrease copies
-UPDATE book SET copies = copies - 1 WHERE book_id = 1;
+  IF available <= 0 THEN
+    ROLLBACK;
+    SELECT 'ERROR: No copies available' AS result;
+  ELSE
+    -- Record the loan
+    INSERT INTO loan (member_id, book_id, loan_date, due_date)
+    VALUES (p_member_id, p_book_id, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY));
 
--- Verify copies didn't go negative
-SELECT copies INTO @new_copies FROM book WHERE book_id = 1;
+    -- Decrease copies
+    UPDATE book SET copies = copies - 1 WHERE book_id = p_book_id;
 
--- If @new_copies < 0, ROLLBACK; otherwise COMMIT
--- ROLLBACK;
-COMMIT;
+    COMMIT;
+    SELECT 'SUCCESS: Book borrowed' AS result;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- Usage:
+CALL borrow_book(2, 1);
 ```
 
+> [!TIP]
+> The `IF ... ELSE` logic only works inside a **stored procedure** — you cannot use it in a plain SQL script. `DELIMITER //` lets us use `;` inside the procedure body without ending the CREATE statement early.
+
 > [!NOTE]
-> In practice, the IF/ELSE logic would be inside a stored procedure. At this level, the key concept is that INSERT + UPDATE must happen together or not at all.
+> `FOR UPDATE` locks the book row so no other session can borrow the last copy at the same time.
 
 </details>
 

@@ -26,14 +26,14 @@ Design the following tables with columns, datatypes, and constraints:
 2. **customer** — ID number, first name, last name, date of birth, phone, email, address
 3. **account** — account number, customer (FK), branch (FK), account type (savings/cheque/fixed deposit), balance, opened date, status (active/frozen/closed)
 4. **staff** — employee number, first name, last name, branch (FK), role (teller/manager), hire date
-5. **transaction** — account (FK), transaction type (deposit/withdrawal/transfer), amount, transaction date, description, reference number
+5. **bank_transaction** — account (FK), transaction type (deposit/withdrawal/transfer), amount, transaction date, description, reference number
 6. **transfer** — from account (FK), to account (FK), amount, transfer date, status (pending/completed/failed)
 
 ### Questions
 
 1. Why must `balance` use `DECIMAL` and not `FLOAT`?
 2. What `CHECK` constraints are critical for the `account` table?
-3. Why does `transfer` need its own table when `transaction` already exists?
+3. Why does `transfer` need its own table when `bank_transaction` already exists?
 4. How would you ensure an account balance never goes negative?
 5. What is the relationship between `customer` and `account`? Can one customer have multiple accounts?
 
@@ -98,7 +98,7 @@ Write a transaction that transfers R1000 from Account A to Account B:
 1. Check that Account A has sufficient balance.
 2. Deduct R1000 from Account A.
 3. Add R1000 to Account B.
-4. Record both transactions in the `transaction` table.
+4. Record both transactions in the `bank_transaction` table.
 5. Record the transfer in the `transfer` table.
 6. If Account A has insufficient funds, `ROLLBACK`.
 
@@ -171,7 +171,7 @@ Write a transaction that transfers R1000 from Account A to Account B:
 
 1. **DECIMAL not FLOAT:** FLOAT uses binary approximation — R99.99 could be stored as R99.9900000001. In banking, even a fraction of a cent matters. DECIMAL stores exact values.
 2. **CHECK constraints on account:** `CHECK (balance >= 0)` (or allow negative for overdraft accounts), `CHECK (account_type IN ('savings', 'cheque', 'fixed deposit'))`, `CHECK (status IN ('active', 'frozen', 'closed'))`.
-3. **Why transfer needs its own table:** A transfer involves two accounts. The `transaction` table records individual account-level movements. The `transfer` table captures the relationship between two transactions (debit from A, credit to B) and tracks the transfer status as a whole.
+3. **Why transfer needs its own table:** A transfer involves two accounts. The `bank_transaction` table records individual account-level movements. The `transfer` table captures the relationship between two transactions (debit from A, credit to B) and tracks the transfer status as a whole.
 4. **Prevent negative balance:** Use `CHECK (balance >= 0)` on the account table. In a stored procedure, check the balance before deducting.
 5. **Customer ↔ Account:** One-to-Many. One customer can have multiple accounts (savings + cheque). Each account belongs to one customer.
 
@@ -230,7 +230,7 @@ CREATE TABLE staff (
   FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
 );
 
-CREATE TABLE transaction (
+CREATE TABLE bank_transaction (
   transaction_id INT PRIMARY KEY AUTO_INCREMENT,
   account_id INT NOT NULL,
   transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('deposit', 'withdrawal', 'transfer')),
@@ -288,7 +288,7 @@ INSERT INTO staff (employee_number, first_name, last_name, branch_id, role, hire
   ('E003', 'Fatima', 'Ahmed', 2, 'teller', '2023-03-10'),
   ('E004', 'James', 'Botha', 3, 'manager', '2019-08-20');
 
-INSERT INTO transaction (account_id, transaction_type, amount, transaction_date, description, reference_number) VALUES
+INSERT INTO bank_transaction (account_id, transaction_type, amount, transaction_date, description, reference_number) VALUES
   (1, 'deposit', 5000.00, '2026-01-05 09:15:00', 'Salary deposit', 'REF-001'),
   (1, 'withdrawal', 1500.00, '2026-01-10 14:30:00', 'ATM withdrawal', 'REF-002'),
   (2, 'deposit', 2000.00, '2026-01-15 10:00:00', 'Transfer from savings', 'REF-003'),
@@ -396,7 +396,7 @@ LIMIT 5;
 **4. Transactions for a specific account, newest first:**
 
 ```sql
-SELECT * FROM transaction
+SELECT * FROM bank_transaction
 WHERE account_id = 1
 ORDER BY transaction_date DESC;
 ```
@@ -418,7 +418,7 @@ SELECT
   a.account_number,
   SUM(CASE WHEN t.transaction_type = 'deposit' THEN t.amount ELSE 0 END) AS total_deposits,
   SUM(CASE WHEN t.transaction_type = 'withdrawal' THEN t.amount ELSE 0 END) AS total_withdrawals
-FROM transaction t
+FROM bank_transaction t
 INNER JOIN account a ON t.account_id = a.account_id
 GROUP BY a.account_id, a.account_number;
 ```
@@ -508,7 +508,7 @@ SELECT
   MONTH(transaction_date) AS month,
   COUNT(*) AS transaction_count,
   SUM(amount) AS total_amount
-FROM transaction
+FROM bank_transaction
 WHERE YEAR(transaction_date) = 2026
 GROUP BY MONTH(transaction_date)
 ORDER BY month;
@@ -532,7 +532,7 @@ SELECT
   MAX(t.transaction_date) AS last_transaction
 FROM account a
 INNER JOIN customer c ON a.customer_id = c.customer_id
-LEFT JOIN transaction t ON a.account_id = t.account_id
+LEFT JOIN bank_transaction t ON a.account_id = t.account_id
 GROUP BY a.account_id, a.account_number, c.first_name, c.last_name
 HAVING MAX(t.transaction_date) IS NULL
    OR DATEDIFF(CURDATE(), MAX(t.transaction_date)) > 90;
@@ -546,6 +546,9 @@ HAVING MAX(t.transaction_date) IS NULL
 | ACC-004-CHQ | Zanele Dlamini | NULL |
 
 > These two accounts have zero transactions. Other accounts may appear if >90 days have passed since their last transaction.
+
+> [!NOTE]
+> `transaction` is a reserved keyword in MySQL. We use `bank_transaction` as the table name to avoid syntax errors. If you ever must use a reserved word, wrap it in backticks: `` `transaction` ``.
 
 **11. Failed transfers:**
 
@@ -578,7 +581,7 @@ SELECT
   (SELECT COUNT(*) FROM customer) AS total_customers,
   (SELECT COUNT(*) FROM account) AS total_accounts,
   (SELECT SUM(balance) FROM account WHERE status = 'active') AS total_balance,
-  (SELECT COUNT(*) FROM transaction) AS total_transactions;
+  (SELECT COUNT(*) FROM bank_transaction) AS total_transactions;
 ```
 
 **Expected output:**
@@ -599,7 +602,7 @@ SELECT
     ELSE 0
   END), 0) AS calculated_net_change
 FROM account a
-LEFT JOIN transaction t ON a.account_id = t.account_id
+LEFT JOIN bank_transaction t ON a.account_id = t.account_id
 GROUP BY a.account_id, a.account_number, a.balance;
 ```
 
@@ -613,33 +616,61 @@ GROUP BY a.account_id, a.account_number, a.balance;
 ### D1. Transfer between accounts
 
 ```sql
-START TRANSACTION;
+DELIMITER //
 
--- Check Account A's balance (account_id = 1)
-SELECT balance INTO @balance_a FROM account WHERE account_id = 1 FOR UPDATE;
+CREATE PROCEDURE transfer_funds(
+  IN p_from_account INT,
+  IN p_to_account INT,
+  IN p_amount DECIMAL(15,2)
+)
+BEGIN
+  DECLARE balance_a DECIMAL(15,2);
 
--- Check sufficient funds
--- In a stored procedure: IF @balance_a < 1000 THEN ROLLBACK;
+  START TRANSACTION;
 
--- Step 1: Deduct from Account A
-UPDATE account SET balance = balance - 1000 WHERE account_id = 1;
+  -- Lock Account A and check balance
+  SELECT balance INTO balance_a FROM account WHERE account_id = p_from_account FOR UPDATE;
 
--- Step 2: Add to Account B
-UPDATE account SET balance = balance + 1000 WHERE account_id = 3;
+  -- Also lock Account B to prevent deadlocks
+  SELECT balance FROM account WHERE account_id = p_to_account FOR UPDATE;
 
--- Step 3: Record withdrawal transaction for Account A
-INSERT INTO transaction (account_id, transaction_type, amount, description, reference_number)
-VALUES (1, 'transfer', 1000.00, 'Transfer to ACC-002-SAV', 'TRF-001-OUT');
+  IF balance_a < p_amount THEN
+    -- Insufficient funds — record failed transfer and roll back balance changes
+    ROLLBACK;
 
--- Step 4: Record deposit transaction for Account B
-INSERT INTO transaction (account_id, transaction_type, amount, description, reference_number)
-VALUES (3, 'transfer', 1000.00, 'Transfer from ACC-001-SAV', 'TRF-001-IN');
+    INSERT INTO transfer (from_account_id, to_account_id, amount, status)
+    VALUES (p_from_account, p_to_account, p_amount, 'failed');
 
--- Step 5: Record the transfer
-INSERT INTO transfer (from_account_id, to_account_id, amount, status)
-VALUES (1, 3, 1000.00, 'completed');
+    SELECT 'ERROR: Insufficient funds' AS result;
+  ELSE
+    -- Step 1: Deduct from Account A
+    UPDATE account SET balance = balance - p_amount WHERE account_id = p_from_account;
 
-COMMIT;
+    -- Step 2: Add to Account B
+    UPDATE account SET balance = balance + p_amount WHERE account_id = p_to_account;
+
+    -- Step 3: Record both transactions
+    INSERT INTO bank_transaction (account_id, transaction_type, amount, description, reference_number)
+    VALUES (p_from_account, 'transfer', p_amount, CONCAT('Transfer to account ', p_to_account),
+            CONCAT('TRF-', p_from_account, '-', p_to_account, '-OUT'));
+
+    INSERT INTO bank_transaction (account_id, transaction_type, amount, description, reference_number)
+    VALUES (p_to_account, 'transfer', p_amount, CONCAT('Transfer from account ', p_from_account),
+            CONCAT('TRF-', p_from_account, '-', p_to_account, '-IN'));
+
+    -- Step 4: Record the transfer
+    INSERT INTO transfer (from_account_id, to_account_id, amount, status)
+    VALUES (p_from_account, p_to_account, p_amount, 'completed');
+
+    COMMIT;
+    SELECT 'SUCCESS: Transfer completed' AS result;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- Usage: Transfer R1000 from Account 1 to Account 3
+CALL transfer_funds(1, 3, 1000.00);
 ```
 
 ### D2. Explanations
@@ -659,7 +690,7 @@ COMMIT;
 
 2. **Danger of FLOAT for Rands:** FLOAT uses binary representation. `0.1` in binary is a repeating fraction, so `0.1 + 0.2` might equal `0.30000000000000004`. Over millions of transactions, these tiny errors accumulate into real financial discrepancies.
 
-3. **Interest calculation:** Add columns `interest_rate DECIMAL(5,4)` and `last_interest_date DATE` to the account table. Create a scheduled job or stored procedure that calculates `balance * (interest_rate / 12)` monthly and inserts a deposit transaction.
+3. **Interest calculation:** Add columns `interest_rate DECIMAL(5,4)` and `last_interest_date DATE` to the account table. Create a scheduled job or stored procedure that calculates `balance * (interest_rate / 12)` monthly and inserts a deposit transaction into `bank_transaction`.
 
 4. **Audit trail features:** Real banks need: who performed each transaction (staff_id), IP address/terminal, timestamp with timezone, before/after balances, approval chains for large transactions, and immutable audit logs that cannot be deleted or modified.
 

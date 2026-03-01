@@ -586,36 +586,64 @@ ORDER BY inventory_value DESC;
 <summary><strong>Part D: Transaction Solution</strong></summary>
 
 ```sql
-START TRANSACTION;
+DELIMITER //
 
--- Insert the sale
-INSERT INTO sale (sale_date, customer_id, staff_id, total_amount)
-VALUES (NOW(), 3, 2, 1149.98);
+CREATE PROCEDURE process_sale(
+  IN p_customer_id INT,
+  IN p_staff_id INT,
+  IN p_product1_id INT,
+  IN p_product2_id INT
+)
+BEGIN
+  DECLARE stock1 INT;
+  DECLARE stock2 INT;
+  DECLARE price1 DECIMAL(10,2);
+  DECLARE price2 DECIMAL(10,2);
+  DECLARE new_sale_id INT;
 
-SET @new_sale_id = LAST_INSERT_ID();
+  START TRANSACTION;
 
--- Insert item 1: Running Shoes (product_id = 5)
-INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
-VALUES (@new_sale_id, 5, 1, 899.99, 899.99);
+  -- Lock rows and read stock + prices
+  SELECT stock_quantity, price INTO stock1, price1
+  FROM product WHERE product_id = p_product1_id FOR UPDATE;
 
--- Insert item 2: Sports Shorts (product_id = 8)
-INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
-VALUES (@new_sale_id, 8, 1, 249.99, 249.99);
+  SELECT stock_quantity, price INTO stock2, price2
+  FROM product WHERE product_id = p_product2_id FOR UPDATE;
 
--- Update stock for product 5
-UPDATE product SET stock_quantity = stock_quantity - 1 WHERE product_id = 5;
+  IF stock1 < 1 OR stock2 < 1 THEN
+    ROLLBACK;
+    SELECT 'ERROR: Insufficient stock' AS result;
+  ELSE
+    -- Insert the sale
+    INSERT INTO sale (sale_date, customer_id, staff_id, total_amount)
+    VALUES (NOW(), p_customer_id, p_staff_id, price1 + price2);
 
--- Update stock for product 8
-UPDATE product SET stock_quantity = stock_quantity - 1 WHERE product_id = 8;
+    SET new_sale_id = LAST_INSERT_ID();
 
--- Verify no negative stock
-SELECT stock_quantity INTO @stock5 FROM product WHERE product_id = 5;
-SELECT stock_quantity INTO @stock8 FROM product WHERE product_id = 8;
+    -- Insert sale items
+    INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
+    VALUES (new_sale_id, p_product1_id, 1, price1, price1);
 
--- If either is negative, ROLLBACK; otherwise COMMIT
--- In a stored procedure you'd use: IF @stock5 < 0 OR @stock8 < 0 THEN ROLLBACK; ELSE COMMIT;
-COMMIT;
+    INSERT INTO sale_item (sale_id, product_id, quantity, unit_price, line_total)
+    VALUES (new_sale_id, p_product2_id, 1, price2, price2);
+
+    -- Update stock
+    UPDATE product SET stock_quantity = stock_quantity - 1 WHERE product_id = p_product1_id;
+    UPDATE product SET stock_quantity = stock_quantity - 1 WHERE product_id = p_product2_id;
+
+    COMMIT;
+    SELECT 'SUCCESS: Sale completed' AS result;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- Usage: sell Running Shoes + Sports Shorts to Sipho, handled by Bongani
+CALL process_sale(3, 2, 5, 8);
 ```
+
+> [!TIP]
+> The stock check happens **before** any changes. If either product is out of stock, `ROLLBACK` ensures nothing is written.
 
 **Why must this be a transaction?** If the sale is recorded but stock isn't updated (or vice versa), the data becomes inconsistent. The sale would show items sold, but inventory wouldn't reflect it. Transactions ensure all-or-nothing.
 

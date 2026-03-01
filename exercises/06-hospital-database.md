@@ -667,29 +667,62 @@ ORDER BY visit_count DESC;
 <summary><strong>Part D: Transaction Solution</strong></summary>
 
 ```sql
-START TRANSACTION;
+DELIMITER //
 
--- Step 1: Update appointment status
-UPDATE appointment
-SET status = 'completed'
-WHERE appointment_id = 6;
+CREATE PROCEDURE complete_appointment(
+  IN p_appointment_id INT,
+  IN p_diag_code VARCHAR(20),
+  IN p_diag_desc VARCHAR(200),
+  IN p_severity VARCHAR(20),
+  IN p_med_name VARCHAR(100),
+  IN p_dosage VARCHAR(50),
+  IN p_frequency VARCHAR(50),
+  IN p_duration INT,
+  IN p_instructions TEXT,
+  IN p_amount DECIMAL(10,2),
+  IN p_pay_method VARCHAR(20)
+)
+BEGIN
+  DECLARE appt_status VARCHAR(20);
+  DECLARE diag_id INT;
 
--- Step 2: Insert diagnosis
-INSERT INTO diagnosis (appointment_id, diagnosis_code, description, severity)
-VALUES (6, 'R51', 'Headache', 'moderate');
+  START TRANSACTION;
 
-SET @diag_id = LAST_INSERT_ID();
+  -- Check appointment exists and isn't already completed
+  SELECT status INTO appt_status FROM appointment WHERE appointment_id = p_appointment_id FOR UPDATE;
 
--- Step 3: Insert prescription
-INSERT INTO prescription (diagnosis_id, medication_name, dosage, frequency, duration_days, instructions)
-VALUES (@diag_id, 'Ibuprofen', '400mg', 'Twice daily', 7, 'Take after meals');
+  IF appt_status <> 'scheduled' THEN
+    ROLLBACK;
+    SELECT CONCAT('ERROR: Appointment status is ', appt_status, ', not scheduled') AS result;
+  ELSE
+    -- Step 1: Update appointment status
+    UPDATE appointment SET status = 'completed' WHERE appointment_id = p_appointment_id;
 
--- Step 4: Insert billing
-INSERT INTO billing (appointment_id, total_amount, payment_method, paid)
-VALUES (6, 550.00, 'cash', FALSE);
+    -- Step 2: Insert diagnosis
+    INSERT INTO diagnosis (appointment_id, diagnosis_code, description, severity)
+    VALUES (p_appointment_id, p_diag_code, p_diag_desc, p_severity);
 
--- If any error occurred, ROLLBACK; otherwise:
-COMMIT;
+    SET diag_id = LAST_INSERT_ID();
+
+    -- Step 3: Insert prescription
+    INSERT INTO prescription (diagnosis_id, medication_name, dosage, frequency, duration_days, instructions)
+    VALUES (diag_id, p_med_name, p_dosage, p_frequency, p_duration, p_instructions);
+
+    -- Step 4: Insert billing
+    INSERT INTO billing (appointment_id, total_amount, payment_method, paid)
+    VALUES (p_appointment_id, p_amount, p_pay_method, FALSE);
+
+    COMMIT;
+    SELECT 'SUCCESS: Appointment completed, diagnosis and billing recorded' AS result;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- Usage:
+CALL complete_appointment(6, 'R51', 'Headache', 'moderate',
+  'Ibuprofen', '400mg', 'Twice daily', 7, 'Take after meals',
+  550.00, 'cash');
 ```
 
 **Why is a billing record without a diagnosis dangerous?** It means the patient was charged for something undocumented. There's no medical justification for the bill, which is a compliance/audit risk. The transaction ensures that if the diagnosis fails to insert, no billing record is created either.

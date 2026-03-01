@@ -576,25 +576,46 @@ LEFT JOIN citizen father ON br.father_citizen_id = father.citizen_id;
 <summary><strong>Part D: Transaction Solution</strong></summary>
 
 ```sql
-START TRANSACTION;
+DELIMITER //
 
--- Check if citizen is already dead
-SELECT is_alive INTO @alive FROM citizen WHERE citizen_id = 4;
+CREATE PROCEDURE register_death(
+  IN p_citizen_id INT,
+  IN p_date_of_death DATE,
+  IN p_cause VARCHAR(200),
+  IN p_place VARCHAR(100),
+  IN p_reported_by INT
+)
+BEGIN
+  DECLARE alive_status BOOLEAN;
 
--- Only proceed if alive (in a stored procedure, you'd use IF)
--- If @alive = FALSE, ROLLBACK
+  START TRANSACTION;
 
--- Step 1: Insert death record
-INSERT INTO death_record (citizen_id, date_of_death, cause_of_death, place_of_death, reported_by_citizen_id)
-VALUES (4, '2023-11-10', 'Natural causes', 'Durban', 3);
+  -- Check if citizen is already dead
+  SELECT is_alive INTO alive_status FROM citizen WHERE citizen_id = p_citizen_id FOR UPDATE;
 
--- Step 2: Mark citizen as deceased
-UPDATE citizen SET is_alive = FALSE WHERE citizen_id = 4;
+  IF alive_status = FALSE THEN
+    ROLLBACK;
+    SELECT 'ERROR: Citizen is already recorded as deceased' AS result;
+  ELSE
+    -- Step 1: Insert death record
+    INSERT INTO death_record (citizen_id, date_of_death, cause_of_death, place_of_death, reported_by_citizen_id)
+    VALUES (p_citizen_id, p_date_of_death, p_cause, p_place, p_reported_by);
 
--- Step 3: Expire their identity document
-UPDATE identity_document SET status = 'expired' WHERE citizen_id = 4;
+    -- Step 2: Mark citizen as deceased
+    UPDATE citizen SET is_alive = FALSE WHERE citizen_id = p_citizen_id;
 
-COMMIT;
+    -- Step 3: Expire their identity document
+    UPDATE identity_document SET status = 'expired' WHERE citizen_id = p_citizen_id;
+
+    COMMIT;
+    SELECT 'SUCCESS: Death registered' AS result;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- Usage:
+CALL register_death(4, '2023-11-10', 'Natural causes', 'Durban', 3);
 ```
 
 **What would go wrong without a transaction?** If the death record is inserted but the system crashes before updating `is_alive` or the ID document status, the data becomes inconsistent — the citizen would appear both dead (death_record exists) and alive (is_alive = TRUE) simultaneously. Government records with such inconsistency could cause legal problems.
